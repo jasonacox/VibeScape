@@ -6,6 +6,8 @@ class VibeScape {
         this.isPlaying = true;
         this.slideshowInterval = 60000; // 60 seconds default
         this.slideshowTimer = null;
+        this.imageCheckInterval = null;
+        this.themeCheckInterval = null;
         
         this.elements = {
             imageContainer: document.getElementById('imageContainer'),
@@ -40,10 +42,23 @@ class VibeScape {
         }
         
         // Check for new images periodically
-        setInterval(() => this.loadImages(), 30000); // Check every 30 seconds
+        this.imageCheckInterval = setInterval(() => this.loadImages(), 30000); // Check every 30 seconds
         
         // Update theme periodically
-        setInterval(() => this.updateTheme(), 300000); // Check every 5 minutes
+        this.themeCheckInterval = setInterval(() => this.updateTheme(), 300000); // Check every 5 minutes
+    }
+    
+    cleanup() {
+        // Clean up intervals to prevent memory leaks
+        if (this.slideshowTimer) {
+            clearInterval(this.slideshowTimer);
+        }
+        if (this.imageCheckInterval) {
+            clearInterval(this.imageCheckInterval);
+        }
+        if (this.themeCheckInterval) {
+            clearInterval(this.themeCheckInterval);
+        }
     }
     
     setupEventListeners() {

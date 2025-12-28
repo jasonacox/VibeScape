@@ -2,6 +2,7 @@
 import os
 import time
 import json
+import uuid
 from pathlib import Path
 from typing import Optional, Dict
 import requests
@@ -74,7 +75,8 @@ class ImageGenerator:
                 img_response = requests.get(image_url, timeout=30)
                 if img_response.status_code == 200:
                     timestamp = int(time.time())
-                    filename = f"image_{timestamp}.png"
+                    unique_id = uuid.uuid4().hex[:8]
+                    filename = f"image_{timestamp}_{unique_id}.png"
                     filepath = self.cache_dir / filename
                     
                     with open(filepath, 'wb') as f:
@@ -116,7 +118,8 @@ class ImageGenerator:
             Dictionary with placeholder image info
         """
         timestamp = int(time.time())
-        filename = f"placeholder_{timestamp}.txt"
+        unique_id = uuid.uuid4().hex[:8]
+        filename = f"placeholder_{timestamp}_{unique_id}.txt"
         filepath = self.cache_dir / filename
         
         # Create a text file as placeholder
