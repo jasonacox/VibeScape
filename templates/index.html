@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeScape - Ambient Generative Art</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="image-container" id="imageContainer">
+            <img id="currentImage" src="" alt="Generative Art" style="display: none;">
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <p>Loading ambient art...</p>
+            </div>
+            <div class="placeholder" id="placeholder">
+                <h1>🎨 VibeScape</h1>
+                <p>An always-on ambient generative art experience</p>
+                <p class="theme-info">Current Theme: <span id="currentTheme">{{ theme }}</span></p>
+            </div>
+        </div>
+        
+        <div class="info-overlay" id="infoOverlay">
+            <div class="theme-badge" id="themeBadge">{{ theme }}</div>
+            <div class="controls">
+                <button class="control-btn" id="prevBtn" title="Previous Image">◀</button>
+                <button class="control-btn" id="playPauseBtn" title="Pause Slideshow">⏸</button>
+                <button class="control-btn" id="nextBtn" title="Next Image">▶</button>
+                <button class="control-btn" id="generateBtn" title="Generate New Image">✨</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
