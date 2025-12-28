@@ -19,7 +19,7 @@ class SeasonalPrompts:
         
         # Holiday themes (higher priority)
         if month == 12 and day >= 20:
-            if day >= 31:
+            if day == 31:
                 return "new_years_eve"
             elif day >= 24:
                 return "christmas"
