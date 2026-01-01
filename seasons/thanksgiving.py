@@ -22,36 +22,56 @@ class Thanksgiving(SeasonBase):
     @property
     def scene_keywords(self) -> list[str]:
         return [
-            "family gathered around Thanksgiving dinner table",
-            "golden roasted turkey centerpiece on dining table",
-            "traditional Thanksgiving feast with all the trimmings",
-            "pumpkin and apple pies on rustic table",
-            "family giving thanks before meal",
-            "cornucopia overflowing with harvest bounty",
-            "Thanksgiving table setting with autumn decorations",
-            "kitchen preparing Thanksgiving dinner",
-            "family cooking together in warm kitchen",
-            "pilgrim and Native American historical feast",
-            "rustic farmhouse Thanksgiving celebration",
-            "multi-generational family gathering",
-            "Thanksgiving parade scene",
-            "autumn harvest table with gourds and wheat",
-            "cranberry sauce and side dishes spread",
-            "carved turkey being served",
-            "family sharing gratitude around table",
-            "cozy dining room with Thanksgiving decorations",
-            "traditional Thanksgiving foods display",
-            "children helping prepare Thanksgiving meal",
-            "elegant Thanksgiving table with candles",
-            "warm kitchen with homemade pies cooling",
-            "family football game on Thanksgiving",
-            "Thanksgiving leftovers sandwich creation",
-            "grateful family holding hands at table",
-            "autumn-themed Thanksgiving centerpiece",
-            "historical Thanksgiving reenactment scene",
-            "farmhouse table with seasonal harvest",
-            "Thanksgiving blessing and prayer moment",
-            "warm gathering with friends and family",
+            # Close-up food shots
+            "close-up of golden roasted turkey with crispy skin, garnished with herbs",
+            "tight shot of cranberry sauce in crystal bowl, glistening red berries",
+            "close-up of pumpkin pie slice with whipped cream swirl",
+            "overhead view of mashed potatoes with melting butter pool",
+            "macro shot of green bean casserole with crispy onions on top",
+            "close-up of stuffing spilling from carved turkey",
+            "tight crop of sweet potato casserole with marshmallow topping",
+            "detailed shot of gravy being poured over turkey and mashed potatoes",
+            "close-up of warm dinner rolls in woven basket with butter",
+            "overhead view of pecan pie with caramelized nuts",
+            "tight shot of apple pie with lattice crust, steam rising",
+            "close-up of cornbread stuffing with celery and herbs",
+            "detailed view of brussels sprouts with bacon bits",
+            "overhead shot of mac and cheese with golden crusty top",
+            "close-up of corn on the cob with melting butter",
+            
+            # Table setting close-ups
+            "close-up of elegant Thanksgiving place setting with autumn napkins",
+            "tight shot of wine glasses and candles on Thanksgiving table",
+            "overhead view of full Thanksgiving table spread, all dishes visible",
+            "close-up of centerpiece with mini pumpkins and fall flowers",
+            "detailed shot of autumn-themed table runner with place cards",
+            
+            # Traditional feast scenes
+            "family gathered around Thanksgiving dinner table, feast spread",
+            "golden roasted turkey centerpiece on dining table with sides",
+            "traditional Thanksgiving feast with all the trimmings displayed",
+            "Thanksgiving table setting with autumn decorations everywhere",
+            "rustic farmhouse Thanksgiving celebration with harvest theme",
+            
+            # Cooking and preparation
+            "kitchen counter with Thanksgiving meal prep in progress",
+            "hands carving turkey on serving platter, steam rising",
+            "family cooking together in warm kitchen, multiple dishes",
+            "warm kitchen with homemade pies cooling on counter",
+            "oven view of turkey roasting, golden brown",
+            
+            # Family gathering moments
+            "multi-generational family giving thanks before meal",
+            "family sharing gratitude around candlelit table",
+            "grateful family holding hands at table for prayer",
+            "children helping set Thanksgiving table",
+            "cozy dining room filled with family and food",
+            "warm gathering with friends and family, laughter and food",
+            
+            # Harvest and decoration
+            "cornucopia overflowing with harvest bounty and gourds",
+            "autumn harvest display with pumpkins and wheat sheaves",
+            "autumn-themed centerpiece with candles and fall leaves",
         ]
     
     @property
@@ -65,7 +85,7 @@ class Thanksgiving(SeasonBase):
             "harvest decorations",
             "cozy atmosphere",
             "traditional recipes",
-            "steaming dishes",
+            "steaming hot dishes",
             "rustic wooden table",
             "seasonal abundance",
             "warm inviting glow",
@@ -73,4 +93,8 @@ class Thanksgiving(SeasonBase):
             "thankful mood",
             "home-cooked warmth",
             "soft bokeh lights",
+            "shallow depth of field",
+            "overhead food photography",
+            "garnished beautifully",
+            "rich textures and details",
         ]

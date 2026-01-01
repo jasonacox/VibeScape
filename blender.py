@@ -7,6 +7,7 @@ to determine which seasons are currently active and their relative weights.
 The blender interpolates between key dates defined in seasonal_config.py
 to create smooth transitions throughout the year.
 """
+import os
 import logging
 from datetime import datetime, date
 from typing import Dict, Tuple
@@ -71,13 +72,29 @@ class SeasonBlender:
         Get the day of year (1-366) for a given date.
         
         Args:
-            target_date: Date to check (defaults to today)
+            target_date: Date to check (defaults to today, or DATE env override)
             
         Returns:
             int: Day of year (1-366)
         """
         if target_date is None:
-            target_date = datetime.now().date()
+            # Check for DATE environment variable override (format: YYYY-MM-DD or MM-DD)
+            date_override = os.environ.get("DATE")
+            if date_override:
+                try:
+                    if len(date_override.split('-')) == 2:
+                        # MM-DD format - use current year
+                        month, day = map(int, date_override.split('-'))
+                        target_date = date(datetime.now().year, month, day)
+                    else:
+                        # YYYY-MM-DD format
+                        target_date = datetime.strptime(date_override, "%Y-%m-%d").date()
+                    logger.info("Using DATE override: %s (day %d)", target_date, target_date.timetuple().tm_yday)
+                except (ValueError, TypeError) as e:
+                    logger.warning("Invalid DATE override '%s': %s - using current date", date_override, e)
+                    target_date = datetime.now().date()
+            else:
+                target_date = datetime.now().date()
         return target_date.timetuple().tm_yday
     
     def _interpolate_weights(self, day_of_year: int) -> Dict[str, float]:

@@ -107,9 +107,11 @@ export REFRESH_SECONDS=60
 
 **Server Settings:**
 - `PORT` - HTTP port (default: 4002)
-- `REFRESH_SECONDS` - Client poll interval (default: 60)
+- `REFRESH_SECONDS` - Minimum seconds between image generations (default: 60)
+- `POLL_INTERVAL` - Client poll frequency in seconds (default: 10)
 - `IMAGE_TIMEOUT` - Generation timeout in seconds (default: 300)
 - `IMAGE_PROVIDER` - "swarmui" (default) or "openai"
+- `DATE` - Date override for testing seasons (format: YYYY-MM-DD or MM-DD)
 
 **SwarmUI Settings:**
 - `SWARMUI` - SwarmUI API base URL (default: http://localhost:7801)
@@ -124,6 +126,28 @@ export REFRESH_SECONDS=60
 - `OPENAI_IMAGE_API_BASE` - API base URL (default: https://api.openai.com/v1)
 - `OPENAI_IMAGE_MODEL` - Model name (default: dall-e-3)
 - `OPENAI_IMAGE_SIZE` - Image size (default: 1024x1024)
+
+### Testing Seasons
+
+Use the `DATE` environment variable to test different seasons and holidays throughout the year:
+
+```bash
+# Test Halloween (October 31)
+DATE=10-31 python3 server.py
+
+# Test Christmas Eve with specific year
+DATE=2025-12-24 python3 server.py
+
+# Test Valentine's Day
+DATE=02-14 python3 server.py
+
+# Test Fourth of July
+DATE=07-04 python3 server.py
+```
+
+The DATE override supports two formats:
+- `MM-DD` - Uses current year
+- `YYYY-MM-DD` - Specific date with year
 
 ## Project Structure
 
@@ -165,15 +189,13 @@ Feel free to share your favorite generated scenes in our [Discussions](https://g
 
 ## Gallery
 
+Example sampling of generated images.
+
+### Christmas
+
 <img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/84170fc8-bf76-4cb2-b754-9ca8147ec45f" style="width:400px;height:400px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);" />
 
 <img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/623261c4-9d6b-4dc1-86a7-44b9eb6d2582" style="width:400px;height:400px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);" />
-
-<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/ab0962c8-6b6e-42d4-aa8f-e21205daca25" style="width:400px;height:400px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);" />
-
-<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/e69f334f-ee18-4871-bc46-7d9366cbc00c" style="width:400px;height:400px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);" />
-
-<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/b53a1c29-ab7a-4aac-8eb9-8900c05a2149" style="width:400px;height:400px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);" />
 
 <img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/83f2db5a-f2c7-41fb-9fa1-1f44cf32c527" style="width:400px;height:400px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);" />
 
@@ -191,3 +213,108 @@ Feel free to share your favorite generated scenes in our [Discussions](https://g
 
 <img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/070f5de8-9ac1-418f-9713-8cc8cc59b1cb" style="width:400px;height:400px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);" />
 
+### New Years 
+
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/ab0962c8-6b6e-42d4-aa8f-e21205daca25" style="width:400px;height:400px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);" />
+
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/e69f334f-ee18-4871-bc46-7d9366cbc00c" style="width:400px;height:400px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);" />
+
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/b53a1c29-ab7a-4aac-8eb9-8900c05a2149" style="width:400px;height:400px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/2acf467b-d9e6-487d-96e6-2057ef1dd592" />
+
+### Winter
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/5c4a69de-0223-43df-856e-7696c675485a" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/bb3509e0-d534-4aa4-a9b7-040ace3904fc" />
+
+### Valentine's Day
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/d065d0ab-02c2-43e9-af6b-857849b1c103" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/775f6eca-1ba5-430d-81a9-71abb2879872" />
+
+### Spring
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/a900a35b-16a4-4d1d-9fee-5cfc01e0038e" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/e7e28b7d-0217-4daf-8df1-be418c068707" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/0bb7e162-f852-4e98-a9fa-c150ab5143a4" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/6973d0f7-b8a3-47ab-a557-413316ecd415" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/7c1f7323-04d5-4dd6-9f7f-83cd61b9f620" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/61f9f130-5d8c-4c1d-86f3-e98ae6dd5e17" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/c22b3345-594e-4946-bc87-d0b0266b0dbb" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/29951d82-efd5-4c7e-b71e-0b7329899777" />
+
+
+### Easter
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/7552da5d-2ac0-4f95-b7cb-c0da3fd2ebc4" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/d62943e9-d997-46ad-8e02-8c755a1ad049" />
+
+
+### Summer
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/47006e85-e554-4db1-9051-61942f03a314" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/50ba0ec0-430c-45d3-86bd-88839988590a" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/8d5b10d2-7eba-4f5b-9aed-6d168dbb3245" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/a1a99e3f-ff31-4fff-930a-3a8147d025d8" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/d48a565f-d923-46b6-bea0-b9400b5655e4" />
+
+
+### Fourth of July
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/af09c0d9-3dd5-4873-9365-b8ad09837731" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/2a6eb934-767c-4435-a07c-e1b27540e161" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/49fb45a6-97ab-4628-902f-ca585c638079" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/f0760ddd-5def-4d25-a295-f7bc15b2f4c3" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/f90e6357-f243-4617-ba5b-320fa42d071f" />
+
+
+### Fall
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/256cc516-ac69-494b-8aaa-bab7a6ec9f7b" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/d9e4696e-500a-49fb-9600-d2574e5578a2" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/69b9f048-c28e-408a-b016-0b65e85edba7" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/ab911d96-ddc3-458b-8970-7cbb14075f29" />
+
+
+### Halloween
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/b275cd49-9221-4304-a003-a8cc830bcd3f" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/db3fd850-afde-4324-a54d-b0adfb77387d" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/289fff16-d5e3-4970-b7e5-42a418ec4e34" />
+
+
+### Thanksgiving
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/2698848c-5dd6-4228-859e-34b9d26c278a" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/13469476-9e25-47a2-b3f6-7ca33d0b031f" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/5ccf97dc-f41e-480d-8969-0936fe42ee1c" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/b02a5be4-9f50-497b-9db9-152f26cd340d" />
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/3d4f270b-867e-4215-acf4-411034bd0382" />

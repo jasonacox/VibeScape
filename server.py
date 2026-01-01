@@ -23,9 +23,11 @@ Key Environment Variables:
     OPENAI_IMAGE_SIZE       - Image size (default: 1024x1024)
   
   Server Settings:
-    PORT               - HTTP port (default: 4000)
-    REFRESH_SECONDS    - Client poll interval (default: 10)
+    PORT               - HTTP port (default: 4002)
+    REFRESH_SECONDS    - Minimum seconds between image generations (default: 60)
+    POLL_INTERVAL      - Client poll frequency in seconds (default: 10)
     IMAGE_TIMEOUT      - Generation timeout in seconds (default: 300)
+    DATE               - Date override for testing (format: YYYY-MM-DD or MM-DD)
 
 Usage:
   # SwarmUI example
@@ -121,9 +123,12 @@ OPENAI_IMAGE_API_BASE = os.environ.get("OPENAI_IMAGE_API_BASE", "https://api.ope
 OPENAI_IMAGE_MODEL = os.environ.get("OPENAI_IMAGE_MODEL", "dall-e-3")
 OPENAI_IMAGE_SIZE = os.environ.get("OPENAI_IMAGE_SIZE", "1024x1024")
 
-# Default refresh interval in seconds (front-end will poll /image)
-# Read `REFRESH_SECONDS` env var (fallback to 60s).
+# Default refresh interval in seconds - server rate-limits image generation to this interval
+# (server won't generate a new image until at least this many seconds have passed)
 DEFAULT_REFRESH = int(os.environ.get("REFRESH_SECONDS", "60"))
+
+# Client poll interval - how often the browser checks for new images
+POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "10"))
 
 app = FastAPI()
 
@@ -497,7 +502,8 @@ async def generate_scene(prompt: str | None = None, season_name: str | None = No
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, refresh: int | None = None):
     """Serve a minimal HTML page that polls `/image` every X seconds."""
-    interval = refresh or DEFAULT_REFRESH
+    # Client polls every POLL_INTERVAL seconds for responsiveness, server rate-limits generation to DEFAULT_REFRESH
+    poll_interval = refresh or POLL_INTERVAL
     # If we have a cached last image, embed it so the page shows immediately
     with IMAGE_CACHE_LOCK:
         cached = LAST_IMAGE
@@ -551,7 +557,7 @@ async def index(request: Request, refresh: int | None = None):
                 </div>
                 <div id="meta">Prompt: <span id="prompt">(generating) - Please Wait...</span><button id="copyBtn">Copy Prompt</button></div>
                 <script>
-                    const interval = {interval} * 1000;
+                    const pollInterval = {poll_interval} * 1000;
                     const initialImage = {initial_image_js};
                     const initialPrompt = {initial_prompt_js};
                     const splash = document.getElementById('splash');
@@ -646,12 +652,12 @@ async def index(request: Request, refresh: int | None = None):
                         // On first visit, wait 5s before starting to poll
                         setTimeout(function() {{
                             fetchImage();
-                            setInterval(fetchImage, interval);
+                            setInterval(fetchImage, pollInterval);
                         }}, 5000);
                     }} else {{
                         // On subsequent visits, start polling immediately
                         fetchImage();
-                        setInterval(fetchImage, interval);
+                        setInterval(fetchImage, pollInterval);
                     }}
                 </script>
             </body>
@@ -698,7 +704,7 @@ async def image_endpoint(request: Request):
     if last_time and cached_result:
         elapsed_since_last = now - last_time
         if elapsed_since_last < DEFAULT_REFRESH:
-            logger.info("Cache: %.1fs since last generation (min %ds) — returning cached image", 
+            logger.debug("Cache: %.1fs since last generation (min %ds) — returning cached image", 
                        elapsed_since_last, DEFAULT_REFRESH)
             return JSONResponse(content=cached_result)
 
