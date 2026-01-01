@@ -113,7 +113,7 @@ IMAGE_TIMEOUT = int(os.environ.get("IMAGE_TIMEOUT", 300))
 IMAGE_PROVIDER = os.environ.get("IMAGE_PROVIDER", "swarmui").lower()
 
 # Server version
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 # OpenAI image settings
 OPENAI_IMAGE_API_KEY = os.environ.get("OPENAI_IMAGE_API_KEY", "")
@@ -279,6 +279,22 @@ async def _lifespan(app):
                 logger.exception("Failed to generate cached icons at startup")
     except Exception:
         logger.exception("Unexpected error during startup icon generation")
+    
+    # Generate initial image to populate cache
+    try:
+        logger.info("Generating initial image for cache...")
+        initial_result = await generate_scene()
+        if "error" not in initial_result:
+            global LAST_IMAGE, LAST_IMAGE_TIME
+            with IMAGE_CACHE_LOCK:
+                LAST_IMAGE = initial_result
+                LAST_IMAGE_TIME = time.time()
+            logger.info("Successfully generated and cached initial image")
+        else:
+            logger.warning("Failed to generate initial image: %s", initial_result.get("error"))
+    except Exception:
+        logger.exception("Failed to generate initial image at startup")
+    
     try:
         yield
     finally:
@@ -300,13 +316,13 @@ def build_prompt() -> tuple[str, str]:
         tuple: (prompt, season_name)
     """
     prompt, season_name = season_blender.get_prompt()
-    logger.info("Built %s prompt: %s", season_name, prompt)
+    logger.debug("Built %s prompt: %s", season_name, prompt)
     return prompt, season_name
 
 
 async def _generate_swarmui(prompt: str) -> dict:
     """Generate image using SwarmUI backend."""
-    logger.info("Sending prompt to SwarmUI (%s) model=%s", SWARMUI, IMAGE_MODEL)
+    logger.debug("Sending prompt to SwarmUI (%s) model=%s", SWARMUI, IMAGE_MODEL)
     
     async def _get_session_id(session: aiohttp.ClientSession) -> str | None:
         try:
@@ -682,7 +698,7 @@ async def image_endpoint(request: Request):
     if last_time and cached_result:
         elapsed_since_last = now - last_time
         if elapsed_since_last < DEFAULT_REFRESH:
-            logger.info("Rate limit: %.1fs since last generation (min %ds) — returning cached image", 
+            logger.info("Cache: %.1fs since last generation (min %ds) — returning cached image", 
                        elapsed_since_last, DEFAULT_REFRESH)
             return JSONResponse(content=cached_result)
 

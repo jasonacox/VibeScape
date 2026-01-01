@@ -64,7 +64,7 @@ class SeasonBlender:
         # Sort by day of year
         self.weight_table.sort(key=lambda x: x[0])
         
-        logger.info("Built interpolation table with %d key dates", len(self.weight_table))
+        logger.debug("Built interpolation table with %d key dates", len(self.weight_table))
     
     def get_day_of_year(self, target_date: date = None) -> int:
         """
@@ -160,7 +160,7 @@ class SeasonBlender:
             day_of_year = self.get_day_of_year(target_date)
         weights = self._interpolate_weights(day_of_year)
         
-        logger.info("Day %d: Active seasons: %s", day_of_year, weights)
+        logger.debug("Day %d: Active seasons: %s", day_of_year, weights)
         return weights
     
     def get_random_season(self, target_date: date = None) -> Tuple[str, object]:
@@ -200,5 +200,5 @@ class SeasonBlender:
         season_name, season = self.get_random_season(target_date)
         prompt = season.get_prompt()
         
-        logger.info("Generated prompt from %s: %s...", season_name, prompt[:100])
+        logger.debug("Generated prompt from %s: %s...", season_name, prompt[:100])
         return prompt, season_name
