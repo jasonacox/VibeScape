@@ -8,13 +8,13 @@ An always-on ambient generative art experience that creates seasonal imagery to 
 
 ## Features
 
-- 🎨 **11 Seasonal Themes** - Winter, Spring, Summer, Fall, Christmas, New Year's, Valentine's Day, Easter, Fourth of July, Halloween, and Thanksgiving
-- 🔄 **Intelligent Blending** - Smooth transitions between seasons with configurable ramp-up periods for holidays
-- 🎯 **Smart Prompts** - Each season has curated scene keywords and extras for varied, high-quality imagery
-- 📅 **Date-Aware** - New Year's prompts include the correct year, holiday themes activate on schedule
-- 🖼️ **Simple UI** - Maximizes each generated scene for impact, shows the prompt, auto-refreshes at configurable intervals
-- 💾 **Startup Cache** - Pre-generates an image on startup for instant first view
-- 🎭 **Dual Providers** - Works with SwarmUI or OpenAI-compatible image generation APIs
+- **11 Seasonal Themes** - Winter, Spring, Summer, Fall, Christmas, New Year's, Valentine's Day, Easter, Fourth of July, Halloween, and Thanksgiving
+- **Intelligent Blending** - Smooth transitions between seasons with configurable ramp-up periods for holidays
+- **Smart Prompts** - Each season has curated scene keywords and extras for varied, high-quality imagery
+- **Date-Aware** - New Year's prompts include the correct year, holiday themes activate on schedule
+- **Simple UI** - Maximizes each generated scene for impact, shows the prompt, auto-refreshes at configurable intervals
+- **Startup Cache** - Pre-generates an image on startup for instant first view
+- **Dual Providers** - Works with SwarmUI or OpenAI-compatible image generation APIs
 
 ## Quick Start
 
