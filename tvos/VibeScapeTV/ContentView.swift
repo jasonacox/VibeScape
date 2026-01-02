@@ -7,7 +7,6 @@
 //  1 January 2026
 
 import SwiftUI
-import UIKit
 
 /// Main tvOS screen: displays the latest VibeScape image and (optionally) the prompt.
 ///
@@ -48,22 +47,24 @@ struct ContentView: View {
             
             // Always show prompt at bottom if available
             if showPrompt, let prompt = imageService.currentPrompt {
-                VStack {
-                    Spacer()
-                    HStack {
+                GeometryReader { geometry in
+                    VStack {
                         Spacer()
-                        Text(prompt)
-                            .font(.system(size: 20))
-                            .foregroundColor(.white.opacity(0.6))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 8)
-                            .background(Color.black.opacity(0.3))
-                            .cornerRadius(6)
-                            .frame(maxWidth: UIScreen.main.bounds.width * 0.5)
-                        Spacer()
+                        HStack {
+                            Spacer()
+                            Text(prompt)
+                                .font(.system(size: 20))
+                                .foregroundColor(.white.opacity(0.6))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 8)
+                                .background(Color.black.opacity(0.3))
+                                .cornerRadius(6)
+                                .frame(maxWidth: geometry.size.width * 0.5)
+                            Spacer()
+                        }
+                        .padding(.bottom, 10)
                     }
-                    .padding(.bottom, 10)
                 }
                 .ignoresSafeArea()
             }
@@ -88,8 +89,11 @@ struct ContentView: View {
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
+            // Sync stored URL before starting (in case it differs from default)
+            if imageURL != imageService.imageURL {
+                _ = imageService.setImageURL(imageURL)
+            }
             imageService.startFetching()
-            _ = imageService.setImageURL(imageURL)
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
@@ -99,7 +103,7 @@ struct ContentView: View {
         .onPlayPauseCommand {
             showSplash.toggle()
         }
-        .onChange(of: imageURL) { newValue in
+        .onChange(of: imageURL) { [imageService] newValue in
             _ = imageService.setImageURL(newValue)
         }
         .fullScreenCover(isPresented: $showSplash) {

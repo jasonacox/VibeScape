@@ -33,7 +33,7 @@ class ImageService: ObservableObject {
     @Published var errorMessage: String?
     
     private var pollTimer: DispatchSourceTimer?
-    private let pollQueue = DispatchQueue(label: "com.jasonacox.vibescape.poll")
+    private let pollQueue = DispatchQueue(label: "com.jasonacox.vibescape.poll", qos: .userInitiated)
     private var lastImageData: String?
     private var isFetching = false
 
@@ -42,6 +42,14 @@ class ImageService: ObservableObject {
 
     private(set) var imageURL: String
     private let refreshInterval: TimeInterval = 10.0
+    
+    /// Dedicated URL session with caching disabled to ensure fresh requests hit the server.
+    private lazy var urlSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        config.urlCache = nil
+        return URLSession(configuration: config)
+    }()
 
     init() {
         self.imageURL = Self.loadImageURL()
@@ -80,8 +88,8 @@ class ImageService: ObservableObject {
         fetchImage()
 
         // Poll reliably on a dispatch queue (avoids run-loop mode pauses).
-        let timer = DispatchSource.makeTimerSource(queue: pollQueue)
-        timer.schedule(deadline: .now() + refreshInterval, repeating: refreshInterval, leeway: .milliseconds(250))
+        let timer = DispatchSource.makeTimerSource(flags: .strict, queue: pollQueue)
+        timer.schedule(deadline: .now() + refreshInterval, repeating: refreshInterval, leeway: .milliseconds(100))
         timer.setEventHandler { [weak self] in
             self?.fetchImage()
         }
@@ -109,7 +117,7 @@ class ImageService: ObservableObject {
             return
         }
         
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        urlSession.dataTask(with: url) { [weak self] data, response, error in
             guard let self = self else { return }
             defer { self.isFetching = false }
             

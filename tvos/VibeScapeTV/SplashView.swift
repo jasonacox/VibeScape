@@ -224,9 +224,9 @@ struct SplashView: View {
     }
 
     private func saveURLWithConnectivityTest(_ rawValue: String) async {
-        if isSaving { return }
+        guard !isSaving else { return }
         await MainActor.run { isSaving = true }
-        defer { Task { @MainActor in isSaving = false } }
+        defer { DispatchQueue.main.async { [self] in isSaving = false } }
 
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
 
