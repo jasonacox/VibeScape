@@ -1,6 +1,22 @@
 # VibeScape Release Notes
 
 
+## Version 1.0.6 (2026-01-02)
+
+### Bug Fixes
+- **Improved Web Client Polling**: Fixed unreliable polling in web UI that caused missed image updates
+  - Replaced `setInterval` with chained `setTimeout` to prevent drift and stacking during slow network conditions
+  - Fixed timestamp tracking to use response timestamp instead of status timestamp
+  - Added visibility change handler to immediately poll when browser tab becomes active (browsers throttle intervals in background tabs)
+- **Static Icon Loading**: Server now loads pre-generated icons from `static/` directory instead of generating at startup
+  - Added `generate_icons.py` script to create favicon.ico, apple-touch-icon.png, and favicon-32x32.png from source image
+  - Falls back to generated landscape icons if static files are missing
+
+### Build Improvements
+- **Docker Image Size Reduction**: Dockerfile now copies only required server files, excluding tvOS app, images, and documentation
+
+---
+
 ## Version 1.0.5 (2026-01-02)
 
 ### Bandwidth Optimization

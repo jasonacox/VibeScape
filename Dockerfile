@@ -17,8 +17,12 @@ COPY requirements.txt /app/requirements.txt
 RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install --no-cache-dir -r /app/requirements.txt
 
-# Copy application code
-COPY . /app
+# Copy only the files needed for the server (exclude tvos, images, docs, etc.)
+COPY server.py /app/
+COPY blender.py /app/
+COPY seasonal_config.py /app/
+COPY seasons/ /app/seasons/
+COPY static/ /app/static/
 
 # Expose port (default 4002)
 ENV PORT=4002

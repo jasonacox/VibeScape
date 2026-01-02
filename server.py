@@ -122,7 +122,7 @@ IMAGE_TIMEOUT = int(os.environ.get("IMAGE_TIMEOUT", 300))
 IMAGE_PROVIDER = os.environ.get("IMAGE_PROVIDER", "swarmui").lower()
 
 # Server version
-VERSION = "1.0.5"
+VERSION = "1.0.6"
 
 # OpenAI image settings
 OPENAI_IMAGE_API_KEY = os.environ.get("OPENAI_IMAGE_API_KEY", "")
@@ -748,6 +748,7 @@ async def index(request: Request, refresh: int | None = None):
 
                     // Track last known image timestamp to avoid re-downloading same image
                     let lastImageTimestamp = null;
+                    let pollTimerId = null;
 
                     async function checkForNewImage() {{
                         try {{
@@ -770,25 +771,42 @@ async def index(request: Request, refresh: int | None = None):
                             const j = await res.json();
                             if (j.image_data) {{
                                 showImage(j.image_data, j.prompt);
-                                lastImageTimestamp = status.timestamp;
+                                lastImageTimestamp = j.timestamp;
                             }}
                         }} catch (e) {{
                             console.error(e);
                         }}
                     }}
                     
+                    // Use a more reliable polling mechanism that works even when tab is in background
+                    function startPolling() {{
+                        if (pollTimerId) return;
+                        
+                        function poll() {{
+                            checkForNewImage().finally(function() {{
+                                pollTimerId = setTimeout(poll, pollInterval);
+                            }});
+                        }}
+                        
+                        poll();
+                    }}
+                    
                     // Start polling after initial display logic
                     if (isFirstVisit) {{
                         // On first visit, wait 5s before starting to poll
-                        setTimeout(function() {{
-                            checkForNewImage();
-                            setInterval(checkForNewImage, pollInterval);
-                        }}, 5000);
+                        setTimeout(startPolling, 5000);
                     }} else {{
                         // On subsequent visits, start polling immediately
-                        checkForNewImage();
-                        setInterval(checkForNewImage, pollInterval);
+                        startPolling();
                     }}
+                    
+                    // Handle visibility changes - browsers throttle intervals in background tabs
+                    document.addEventListener('visibilitychange', function() {{
+                        if (document.visibilityState === 'visible') {{
+                            // Tab became visible - poll immediately
+                            checkForNewImage();
+                        }}
+                    }});
                 </script>
             </body>
     </html>
