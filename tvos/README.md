@@ -17,6 +17,8 @@ A tvOS app that displays images from the VibeScape server with automatic refresh
   - Real-time server connectivity verification
 - Error handling with user-friendly messages
 
+<img width="640" alt="image" src="https://github.com/user-attachments/assets/9fbee850-c972-491d-a6c4-d813fdfdaa8c" />
+
 ## Requirements
 
 - Xcode 15.0 or later
