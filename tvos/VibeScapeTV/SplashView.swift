@@ -41,63 +41,69 @@ struct SplashView: View {
     
     var body: some View {
         ZStack {
-            // Semi-transparent backdrop
-            Color.black.opacity(0.95)
-                .ignoresSafeArea()
+            // Full-screen gradient background matching the logo's sunset-to-night sky
+            LinearGradient(
+                colors: [
+                    Color(red: 0.08, green: 0.10, blue: 0.28),  // Deep night blue (top)
+                    Color(red: 0.20, green: 0.15, blue: 0.45),  // Purple transition
+                    Color(red: 0.55, green: 0.30, blue: 0.50),  // Mauve/pink
+                    Color(red: 0.85, green: 0.45, blue: 0.40),  // Warm coral
+                    Color(red: 1.00, green: 0.65, blue: 0.30)   // Sunset orange (bottom)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
             
-            VStack(spacing: 30) {
-                // VibeScape title with gradient
-                Text("VibeScape")
-                    .font(.system(size: 80, weight: .bold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color(red: 0.7, green: 0, blue: 0), Color(red: 1, green: 0.84, blue: 0)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .shadow(color: .black.opacity(0.4), radius: 6, x: 2, y: 2)
+            VStack(spacing: 20) {
+                // VibeScape logo image
+                Image("VibeScapeLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: 600, maxHeight: 280)
+                    .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 10)
                 
                 // Subtitle
                 Text("AI Powered Seasonal Dreams")
-                    .font(.system(size: 28))
-                    .foregroundColor(.white.opacity(0.9))
+                    .font(.system(size: 26, weight: .light))
+                    .foregroundColor(.white.opacity(0.95))
+                    .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
                 
                 // GitHub link
                 Text("github.com/jasonacox/VibeScape")
-                    .font(.system(size: 22))
-                    .foregroundColor(Color(red: 1, green: 0.84, blue: 0))
-                    .padding(.top, 10)
+                    .font(.system(size: 20))
+                    .foregroundColor(.white.opacity(0.8))
+                    .padding(.top, 4)
                 
                 // Version
-                Text("Version: 1.0")
-                    .font(.system(size: 18))
-                    .foregroundColor(.white.opacity(0.6))
-                    .padding(.top, 15)
+                Text("Version 1.0")
+                    .font(.system(size: 16))
+                    .foregroundColor(.white.opacity(0.5))
+                    .padding(.top, 8)
                 
-                // Divider
+                // Divider - subtle white line
                 Rectangle()
-                    .fill(Color.white.opacity(0.3))
+                    .fill(Color.white.opacity(0.25))
                     .frame(height: 1)
-                    .frame(maxWidth: 500)
-                    .padding(.vertical, 20)
+                    .frame(maxWidth: 450)
+                    .padding(.vertical, 16)
                 
                 // Settings section
-                VStack(spacing: 25) {
+                VStack(spacing: 20) {
                     // Toggle for showing/hiding prompt
-                    VStack(spacing: 15) {
+                    VStack(spacing: 12) {
                         Text("Show Prompt Text")
-                            .font(.system(size: 24))
-                            .foregroundColor(.white)
+                            .font(.system(size: 22))
+                            .foregroundColor(.white.opacity(0.9))
                         
                         Button(action: {
                             showPrompt.toggle()
                         }) {
                             Text(showPrompt ? "ON" : "OFF")
-                                .font(.system(size: 22, weight: .semibold))
+                                .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.white)
-                                .frame(width: 150, height: 60)
-                                .background(showPrompt ? Color.green.opacity(0.8) : Color.gray.opacity(0.6))
+                                .frame(width: 140, height: 54)
+                                .background(showPrompt ? Color(red: 0.2, green: 0.6, blue: 0.4) : Color.white.opacity(0.2))
                                 .cornerRadius(10)
                         }
                         .buttonStyle(.card)
@@ -105,37 +111,37 @@ struct SplashView: View {
                     }
 
                     // Image URL
-                    VStack(spacing: 12) {
-                        Text("VibeScape Image Server URL")
-                            .font(.system(size: 24))
-                            .foregroundColor(.white)
+                    VStack(spacing: 10) {
+                        Text("Image Server URL")
+                            .font(.system(size: 22))
+                            .foregroundColor(.white.opacity(0.9))
 
                         TextField("https://…/image", text: $draftImageURL)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 20))
+                            .font(.system(size: 18))
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .background(Color.white.opacity(0.12))
-                            .cornerRadius(10)
+                            .padding(.vertical, 10)
+                            .background(Color.black.opacity(0.3))
+                            .cornerRadius(8)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
                             )
-                            .frame(width: 800)
+                            .frame(width: 700)
                             .focused($focusedButton, equals: .urlField)
 
-                        HStack(spacing: 20) {
+                        HStack(spacing: 16) {
                             Button(action: {
                                 beginSaveURL(draftImageURL)
                             }) {
                                 Text(isSaving ? "Saving…" : "Save")
-                                    .font(.system(size: 22, weight: .semibold))
+                                    .font(.system(size: 20, weight: .semibold))
                                     .foregroundColor(.white)
-                                    .frame(width: 180, height: 56)
-                                    .background(Color.white.opacity(0.2))
-                                    .cornerRadius(10)
+                                    .frame(width: 160, height: 50)
+                                    .background(Color.white.opacity(0.15))
+                                    .cornerRadius(8)
                             }
                             .buttonStyle(.card)
                             .focused($focusedButton, equals: .saveURL)
@@ -146,11 +152,11 @@ struct SplashView: View {
                                 beginSaveURL(draftImageURL)
                             }) {
                                 Text("Reset")
-                                    .font(.system(size: 22, weight: .semibold))
+                                    .font(.system(size: 20, weight: .semibold))
                                     .foregroundColor(.white)
-                                    .frame(width: 180, height: 56)
-                                    .background(Color.white.opacity(0.2))
-                                    .cornerRadius(10)
+                                    .frame(width: 160, height: 50)
+                                    .background(Color.white.opacity(0.15))
+                                    .cornerRadius(8)
                             }
                             .buttonStyle(.card)
                             .focused($focusedButton, equals: .resetURL)
@@ -163,36 +169,29 @@ struct SplashView: View {
                         isPresented = false
                     }) {
                         Text("Close")
-                            .font(.system(size: 24, weight: .medium))
+                            .font(.system(size: 22, weight: .medium))
                             .foregroundColor(.white)
-                            .frame(width: 250, height: 60)
-                            .background(Color.white.opacity(0.2))
-                            .cornerRadius(10)
+                            .frame(width: 220, height: 54)
+                            .background(Color.white.opacity(0.15))
+                            .cornerRadius(8)
                     }
                     .buttonStyle(.card)
                     .focused($focusedButton, equals: .close)
+                    .padding(.top, 8)
                 }
+                .padding(30)
+                .background(Color.black.opacity(0.35))
+                .cornerRadius(16)
                 .focusSection()
                 
                 // Close instruction
-                Text("or press Menu/Back to close")
-                    .font(.system(size: 18))
-                    .foregroundColor(.white.opacity(0.5))
-                    .padding(.top, 10)
+                Text("Press Menu to close")
+                    .font(.system(size: 16))
+                    .foregroundColor(.white.opacity(0.4))
+                    .padding(.top, 6)
             }
-            .padding(60)
-            .background(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.7, green: 0.067, blue: 0.067).opacity(0.18),
-                        Color(red: 1, green: 0.84, blue: 0).opacity(0.12)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .cornerRadius(20)
-            .shadow(color: .black.opacity(0.5), radius: 60, x: 0, y: 20)
+            .padding(.horizontal, 80)
+            .padding(.vertical, 50)
         }
         .onAppear {
             draftImageURL = imageURL
