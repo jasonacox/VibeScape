@@ -1,11 +1,12 @@
 {
   "images" : [
     {
+      "filename" : "vibescape-top-banner-1920.png",
       "idiom" : "tv"
     }
   ],
   "info" : {
-    "version" : 1,
-    "author" : "xcode"
+    "author" : "xcode",
+    "version" : 1
   }
 }
