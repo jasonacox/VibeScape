@@ -1,10 +1,12 @@
 {
   "images" : [
     {
+      "filename" : "vibescape-top-banner-1920x720.png",
       "idiom" : "tv",
       "scale" : "1x"
     },
     {
+      "filename" : "vibescape-top-banner-3840x1440.png",
       "idiom" : "tv",
       "scale" : "2x"
     }
