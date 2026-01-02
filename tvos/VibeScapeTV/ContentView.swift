@@ -17,6 +17,7 @@ struct ContentView: View {
     @StateObject private var imageService = ImageService()
     @State private var showSplash = false
     @State private var showPrompt = true
+    @State private var imageURL = ImageService.loadImageURL()
     
     var body: some View {
         ZStack {
@@ -86,6 +87,7 @@ struct ContentView: View {
         }
         .onAppear {
             imageService.startFetching()
+            _ = imageService.setImageURL(imageURL)
         }
         .onDisappear {
             imageService.stopFetching()
@@ -94,8 +96,11 @@ struct ContentView: View {
         .onPlayPauseCommand {
             showSplash.toggle()
         }
+        .onChange(of: imageURL) { newValue in
+            _ = imageService.setImageURL(newValue)
+        }
         .fullScreenCover(isPresented: $showSplash) {
-            SplashView(isPresented: $showSplash, showPrompt: $showPrompt)
+            SplashView(isPresented: $showSplash, showPrompt: $showPrompt, imageURL: $imageURL)
         }
     }
 }

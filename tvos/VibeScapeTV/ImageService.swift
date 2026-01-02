@@ -34,8 +34,41 @@ class ImageService: ObservableObject {
     
     private var timer: Timer?
     private var lastImageData: String?
-    private let imageURL = "https://vibescape.jasonacox.com/image"
+
+    static let defaultImageURL = "https://vibescape.jasonacox.com/image"
+    static let imageURLUserDefaultsKey = "vibescape.imageURL"
+
+    private(set) var imageURL: String
     private let refreshInterval: TimeInterval = 10.0
+
+    init() {
+        self.imageURL = Self.loadImageURL()
+    }
+
+    /// Loads the configured image URL (or the default if not set).
+    static func loadImageURL() -> String {
+        UserDefaults.standard.string(forKey: imageURLUserDefaultsKey) ?? defaultImageURL
+    }
+
+    /// Updates the image URL if valid and persists it.
+    /// Returns `true` if the URL was accepted.
+    @discardableResult
+    func setImageURL(_ newValue: String) -> Bool {
+        let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              (scheme == "https" || scheme == "http") else {
+            DispatchQueue.main.async {
+                self.errorMessage = "Invalid image URL"
+            }
+            return false
+        }
+
+        imageURL = trimmed
+        UserDefaults.standard.set(trimmed, forKey: Self.imageURLUserDefaultsKey)
+        fetchImage()
+        return true
+    }
     
     /// Starts polling immediately and then every `refreshInterval` seconds.
     func startFetching() {

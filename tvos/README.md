@@ -4,13 +4,16 @@ A tvOS app that displays images from the VibeScape server with automatic refresh
 
 ## Features
 
-- Fetches and displays images from `https://vibescape.jasonacox.com/image`
+- Fetches and displays images from a configurable VibeScape server
 - Automatically refreshes every 10 seconds
-- Displays the AI-generated prompt (can be hidden via the splash screen)
-- Smooth transitions between images
-- Avoids transitions when the image is unchanged
+- Displays the AI-generated prompt (can be toggled on/off)
+- Smooth transitions between images (only when image changes)
+- Configurable image server URL with validation and connectivity testing
+- Built-in splash/settings screen with:
+  - Prompt visibility toggle (ON/OFF)
+  - VibeScape Image Server URL editor with Save/Reset
+  - Real-time server connectivity verification
 - Error handling with user-friendly messages
-- Built-in splash/settings screen (VibeScape branding)
 
 ## Requirements
 
@@ -26,10 +29,19 @@ A tvOS app that displays images from the VibeScape server with automatic refresh
 
 ## How to Use
 
-- The app will automatically start fetching and displaying images
-- Press **Play/Pause** to open/close the splash screen
-- On the splash screen, use the **ON/OFF** button to toggle prompt visibility
-- Images refresh every 10 seconds, but only fade when a new image arrives
+- The app will automatically start fetching and displaying images from the default server
+- Press **Play/Pause** or tap the image to open the splash/settings screen
+
+### Splash Screen Options
+
+- **Show Prompt Text**: Toggle ON/OFF to show/hide the AI prompt at the bottom of images
+- **Image Server URL**: 
+  - Edit the server endpoint URL
+  - Press **Save** to test connectivity and apply changes
+  - Press **Reset** to restore the default URL (`https://vibescape.jasonacox.com/image`)
+  - The app validates the URL format and tests connectivity before saving
+- **Close**: Return to the image viewer
+- Press **Menu/Back** on the remote to close the splash screen
 
 ## Project Structure
 
@@ -43,16 +55,29 @@ A tvOS app that displays images from the VibeScape server with automatic refresh
 
 The app expects JSON responses in the following format:
 
-```json
-{
-  "prompt": "Description of the generated image",
-  "image_data": "data:image/jpeg;base64,..."
-}
-```
+```jsonImage Server URL (In-App)
 
-## Customization
+1. Press **Play/Pause** to open the splash/settings screen
+2. Navigate to the **Image Server URL** text field
+3. Edit the URL (must include `http://` or `https://`)
+4. Press **Save** to validate and test connectivity
+5. If successful, the new URL is saved and immediately applied
+6. Press **Reset** to restore the default URL
+
+### Change the Refresh Interval (Code)
 
 To change the refresh interval, modify the `refreshInterval` constant in `ImageService.swift`:
+
+```swift
+private let refreshInterval: TimeInterval = 10.0 // seconds
+```
+
+### Change the Default Server URL (Code)
+
+To change the default server URL, update `defaultImageURL` in `ImageService.swift`:
+
+```swift
+static let defaultI refresh interval, modify the `refreshInterval` constant in `ImageService.swift`:
 
 ```swift
 private let refreshInterval: TimeInterval = 10.0 // seconds

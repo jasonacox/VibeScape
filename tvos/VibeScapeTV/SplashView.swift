@@ -8,6 +8,7 @@
 //
 
 import SwiftUI
+import Foundation
 
 /// Full-screen splash/settings screen.
 ///
@@ -17,11 +18,24 @@ import SwiftUI
 struct SplashView: View {
     @Binding var isPresented: Bool
     @Binding var showPrompt: Bool
+    @Binding var imageURL: String
     @FocusState private var focusedButton: FocusableButton?
+
+    @State private var draftImageURL: String = ""
+    @State private var showValidationAlert = false
+    @State private var validationMessage = ""
+    @State private var showResultAlert = false
+    @State private var resultTitle = ""
+    @State private var resultMessage = ""
+    @State private var closeOnResultOK = false
+    @State private var isSaving = false
     
     /// Focus targets for the tvOS focus engine.
     enum FocusableButton {
         case toggle
+        case urlField
+        case saveURL
+        case resetURL
         case close
     }
     
@@ -89,6 +103,60 @@ struct SplashView: View {
                         .buttonStyle(.card)
                         .focused($focusedButton, equals: .toggle)
                     }
+
+                    // Image URL
+                    VStack(spacing: 12) {
+                        Text("VibeScape Image Server URL")
+                            .font(.system(size: 24))
+                            .foregroundColor(.white)
+
+                        TextField("https://…/image", text: $draftImageURL)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 20))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color.white.opacity(0.12))
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                            )
+                            .frame(width: 800)
+                            .focused($focusedButton, equals: .urlField)
+
+                        HStack(spacing: 20) {
+                            Button(action: {
+                                beginSaveURL(draftImageURL)
+                            }) {
+                                Text(isSaving ? "Saving…" : "Save")
+                                    .font(.system(size: 22, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 180, height: 56)
+                                    .background(Color.white.opacity(0.2))
+                                    .cornerRadius(10)
+                            }
+                            .buttonStyle(.card)
+                            .focused($focusedButton, equals: .saveURL)
+                            .disabled(isSaving)
+
+                            Button(action: {
+                                draftImageURL = ImageService.defaultImageURL
+                                beginSaveURL(draftImageURL)
+                            }) {
+                                Text("Reset")
+                                    .font(.system(size: 22, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 180, height: 56)
+                                    .background(Color.white.opacity(0.2))
+                                    .cornerRadius(10)
+                            }
+                            .buttonStyle(.card)
+                            .focused($focusedButton, equals: .resetURL)
+                            .disabled(isSaving)
+                        }
+                    }
                     
                     // Close button
                     Button(action: {
@@ -127,14 +195,134 @@ struct SplashView: View {
             .shadow(color: .black.opacity(0.5), radius: 60, x: 0, y: 20)
         }
         .onAppear {
+            draftImageURL = imageURL
             focusedButton = .toggle
         }
         .onExitCommand {
             isPresented = false
         }
+        .alert("Invalid URL", isPresented: $showValidationAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(validationMessage)
+        }
+        .alert(resultTitle, isPresented: $showResultAlert) {
+            Button("OK") {
+                if closeOnResultOK {
+                    isPresented = false
+                }
+            }
+        } message: {
+            Text(resultMessage)
+        }
+    }
+
+    private func beginSaveURL(_ rawValue: String) {
+        Task {
+            await saveURLWithConnectivityTest(rawValue)
+        }
+    }
+
+    private func saveURLWithConnectivityTest(_ rawValue: String) async {
+        if isSaving { return }
+        await MainActor.run { isSaving = true }
+        defer { Task { @MainActor in isSaving = false } }
+
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmed.isEmpty else {
+            await MainActor.run {
+                validationMessage = "Please enter a URL. Example: https://vibescape.jasonacox.com/image"
+                showValidationAlert = true
+            }
+            return
+        }
+
+        guard let url = URL(string: trimmed) else {
+            await MainActor.run {
+                validationMessage = "That doesn't look like a valid URL. Example: https://vibescape.jasonacox.com/image"
+                showValidationAlert = true
+            }
+            return
+        }
+
+        // If the user omitted the scheme, URL(string:) will still parse but scheme will be nil.
+        guard let scheme = url.scheme?.lowercased(), (scheme == "https" || scheme == "http") else {
+            await MainActor.run {
+                validationMessage = "Please include the full URL with http:// or https:// (for example: https://vibescape.jasonacox.com/image)."
+                showValidationAlert = true
+            }
+            return
+        }
+
+        do {
+            try await testImageEndpoint(url)
+        } catch {
+            await MainActor.run {
+                closeOnResultOK = false
+                resultTitle = "Unable to Connect"
+                let details = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                resultMessage = "Server is not responding or the URL is bad.\n\nPlease verify the address and try again.\n\nDetails: \(details)\nURL: \(trimmed)"
+                showResultAlert = true
+            }
+            return
+        }
+
+        await MainActor.run {
+            imageURL = trimmed
+            closeOnResultOK = true
+            resultTitle = "Server URL Saved"
+            resultMessage = "The image server URL was saved successfully."
+            showResultAlert = true
+        }
+    }
+
+    private enum EndpointTestError: LocalizedError {
+        case nonHTTPResponse
+        case httpStatus(Int)
+        case emptyResponse
+        case missingImageData
+
+        var errorDescription: String? {
+            switch self {
+            case .nonHTTPResponse:
+                return "Non-HTTP response"
+            case .httpStatus(let code):
+                return "HTTP status \(code)"
+            case .emptyResponse:
+                return "Empty response body"
+            case .missingImageData:
+                return "Response did not contain expected JSON field 'image_data'"
+            }
+        }
+    }
+
+    private func testImageEndpoint(_ url: URL) async throws {
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        request.timeoutInterval = 6
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw EndpointTestError.nonHTTPResponse
+        }
+        guard (200...299).contains(http.statusCode) else {
+            throw EndpointTestError.httpStatus(http.statusCode)
+        }
+        guard !data.isEmpty else { throw EndpointTestError.emptyResponse }
+
+        // Light validation: ensure this looks like the expected JSON payload.
+        if let obj = try? JSONSerialization.jsonObject(with: data),
+           let dict = obj as? [String: Any],
+           dict["image_data"] != nil {
+            return
+        }
+
+        // If it's not the expected JSON shape, treat as invalid.
+        throw EndpointTestError.missingImageData
     }
 }
 
 #Preview {
-    SplashView(isPresented: .constant(true), showPrompt: .constant(true))
+    SplashView(isPresented: .constant(true), showPrompt: .constant(true), imageURL: .constant(ImageService.defaultImageURL))
 }
