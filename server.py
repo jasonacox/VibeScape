@@ -28,6 +28,7 @@ Key Environment Variables:
     POLL_INTERVAL      - Client poll frequency in seconds (default: 10)
     IMAGE_TIMEOUT      - Generation timeout in seconds (default: 300)
     DATE               - Date override for testing (format: YYYY-MM-DD or MM-DD)
+    ENABLE_DOCS        - Enable FastAPI docs endpoints /docs and /redoc (default: false)
 
 Usage:
   # SwarmUI example
@@ -115,7 +116,7 @@ IMAGE_TIMEOUT = int(os.environ.get("IMAGE_TIMEOUT", 300))
 IMAGE_PROVIDER = os.environ.get("IMAGE_PROVIDER", "swarmui").lower()
 
 # Server version
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 
 # OpenAI image settings
 OPENAI_IMAGE_API_KEY = os.environ.get("OPENAI_IMAGE_API_KEY", "")
@@ -130,7 +131,15 @@ DEFAULT_REFRESH = int(os.environ.get("REFRESH_SECONDS", "60"))
 # Client poll interval - how often the browser checks for new images
 POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "10"))
 
-app = FastAPI()
+# API documentation (disable in production for security)
+ENABLE_DOCS = os.environ.get("ENABLE_DOCS", "false").lower() in ("true", "1", "yes")
+
+# Create FastAPI app with conditional documentation
+app = FastAPI(
+    docs_url="/docs" if ENABLE_DOCS else None,
+    redoc_url="/redoc" if ENABLE_DOCS else None,
+    openapi_url="/openapi.json" if ENABLE_DOCS else None,
+)
 
 # Initialize seasonal blender
 season_blender = SeasonBlender()
@@ -285,28 +294,37 @@ async def _lifespan(app):
     except Exception:
         logger.exception("Unexpected error during startup icon generation")
     
-    # Generate initial image to populate cache
-    try:
-        logger.info("Generating initial image for cache...")
-        initial_result = await generate_scene()
-        if "error" not in initial_result:
-            global LAST_IMAGE, LAST_IMAGE_TIME
-            with IMAGE_CACHE_LOCK:
-                LAST_IMAGE = initial_result
-                LAST_IMAGE_TIME = time.time()
-            logger.info("Successfully generated and cached initial image")
-        else:
-            logger.warning("Failed to generate initial image: %s", initial_result.get("error"))
-    except Exception:
-        logger.exception("Failed to generate initial image at startup")
+    # Generate initial image in background (don't block server startup)
+    async def _generate_initial_image():
+        try:
+            logger.info("Generating initial image for cache...")
+            initial_result = await generate_scene()
+            if "error" not in initial_result:
+                global LAST_IMAGE, LAST_IMAGE_TIME
+                with IMAGE_CACHE_LOCK:
+                    LAST_IMAGE = initial_result
+                    LAST_IMAGE_TIME = time.time()
+                logger.info("Successfully generated and cached initial image")
+            else:
+                logger.warning("Failed to generate initial image: %s", initial_result.get("error"))
+        except Exception:
+            logger.exception("Failed to generate initial image at startup")
+    
+    # Start background task for initial image generation
+    initial_image_task = asyncio.create_task(_generate_initial_image())
     
     try:
         yield
     finally:
         logger.info("Application shutdown initiated — performing cleanup.")
         cleanup_task.cancel()
+        initial_image_task.cancel()
         try:
             await cleanup_task
+        except asyncio.CancelledError:
+            pass
+        try:
+            await initial_image_task
         except asyncio.CancelledError:
             pass
 

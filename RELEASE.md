@@ -1,5 +1,17 @@
 # VibeScape Release Notes
 
+
+## Version 1.0.3 (2026-01-01)
+
+### Performance & User Experience Improvements
+- **Non-Blocking Server Startup**: Initial image generation now runs in background task, allowing the splash page to display immediately upon server start instead of waiting 5-15+ seconds for first image generation
+- **Instant Responsiveness**: Server accepts connections and serves UI immediately while preparing first cached image
+
+### Security Improvements
+- **API Documentation Disabled by Default**: FastAPI documentation endpoints (`/docs`, `/redoc`, `/openapi.json`) are now disabled in production for enhanced security. Enable with `ENABLE_DOCS=true` environment variable for development/testing.
+
+---
+
 ## Version 1.0.2 (2026-01-01)
 
 ### Initial VibeScape Release
