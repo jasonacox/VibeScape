@@ -2,6 +2,8 @@
 
 A tvOS app that displays images from the VibeScape server with automatic refresh every 10 seconds.
 
+<img width="640" height="384" alt="vibescape-logo" src="https://github.com/user-attachments/assets/3c90d257-51c5-468b-a5b9-74e242a2ddf1" />
+
 ## Features
 
 - Fetches and displays images from a configurable VibeScape server
