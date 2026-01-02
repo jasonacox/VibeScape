@@ -39,12 +39,12 @@ SEASONAL_WEIGHTS = {
     (12, 27): {"christmas": 0.50, "new_years": 0.50},
     (12, 28): {"christmas": 0.30, "new_years": 0.70},
     (12, 29): {"christmas": 0.15, "new_years": 0.85},
-    (12, 30): {"new_years": 1.0},
-    (12, 31): {"new_years": 1.0},                              # New Year's Eve - 100%
+    (12, 30): {"new_years": 0.25, "winter": 0.75},
+    (12, 31): {"new_years": 0.90, "winter": 0.10},                              # New Year's Eve - 100%
     
     # New Year's Day is terminal
-    (1, 1): {"new_years": 1.0},                                # New Year's Day - 100%
-    (1, 2): {"winter": 1.0},                                    # Switch to Winter
+    (1, 1): {"new_years": 0.5, "winter": 0.5},                                # New Year's Day - 100%
+    (1, 2): {"winter": 0.8, "new_years": 0.2},                                    # Switch to Winter
     
     # Winter season
     (1, 5): {"winter": 1.0},

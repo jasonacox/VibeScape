@@ -10,6 +10,7 @@ to create smooth transitions throughout the year.
 import os
 import logging
 from datetime import datetime, date
+from zoneinfo import ZoneInfo
 from typing import Dict, Tuple
 
 from seasons.christmas import Christmas
@@ -26,6 +27,9 @@ from seasons.valentines import Valentines
 from seasonal_config import SEASONAL_WEIGHTS, get_day_of_year as config_day_of_year
 
 logger = logging.getLogger("vibescape.blender")
+
+# Timezone to use for date calculations (configurable via TIMEZONE env var, defaults to PST/PDT)
+TIMEZONE = ZoneInfo(os.environ.get("TIMEZONE", "America/Los_Angeles"))
 
 
 class SeasonBlender:
@@ -72,7 +76,7 @@ class SeasonBlender:
         Get the day of year (1-366) for a given date.
         
         Args:
-            target_date: Date to check (defaults to today, or DATE env override)
+            target_date: Date to check (defaults to today in PST, or DATE env override)
             
         Returns:
             int: Day of year (1-366)
@@ -83,18 +87,20 @@ class SeasonBlender:
             if date_override:
                 try:
                     if len(date_override.split('-')) == 2:
-                        # MM-DD format - use current year
+                        # MM-DD format - use current year in PST
                         month, day = map(int, date_override.split('-'))
-                        target_date = date(datetime.now().year, month, day)
+                        now_pst = datetime.now(TIMEZONE)
+                        target_date = date(now_pst.year, month, day)
                     else:
                         # YYYY-MM-DD format
                         target_date = datetime.strptime(date_override, "%Y-%m-%d").date()
                     logger.info("Using DATE override: %s (day %d)", target_date, target_date.timetuple().tm_yday)
                 except (ValueError, TypeError) as e:
                     logger.warning("Invalid DATE override '%s': %s - using current date", date_override, e)
-                    target_date = datetime.now().date()
+                    target_date = datetime.now(TIMEZONE).date()
             else:
-                target_date = datetime.now().date()
+                # Use current date in PST timezone
+                target_date = datetime.now(TIMEZONE).date()
         return target_date.timetuple().tm_yday
     
     def _interpolate_weights(self, day_of_year: int) -> Dict[str, float]:

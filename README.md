@@ -70,11 +70,38 @@ The blender automatically interpolates between key dates for smooth daily transi
 ## API Endpoints
 
 - `/` - Main UI (auto-refreshing image viewer)
-- `/image` - JSON: generates/returns new scene
+- `/image` - JSON: generates/returns new scene (instant response with cached image, generation happens in background)
 - `/season` - JSON: current active seasons and weights
-- `/stats` - JSON: usage statistics
+- `/stats` - JSON: usage statistics including generation times, success/failure counts, and cache status
 - `/health` - Health check
 - `/version` - Version and provider info
+
+### Performance Features
+
+**Non-Blocking Architecture**: The server returns cached images immediately while generating new ones in the background. This ensures every request gets an instant response, even during 5-15+ second image generation times.
+
+**Background Generation**: When a cached image expires its TTL (default 60 seconds), the server immediately returns the old image while triggering background generation of a new one. The next request will get the fresh image.
+
+**Startup Cache**: Initial image generation happens in the background during server startup, allowing the UI to be served immediately without waiting.
+
+**Failure Tracking**: The `/stats` endpoint includes `images_failed` counter to help with operational monitoring of the generation backend.
+
+## Timezone Configuration
+
+VibeScape uses timezone-aware date calculations to ensure seasonal transitions happen at the correct local time, even if the server is running in a different timezone (e.g., UTC/GMT).
+
+```bash
+# Default: America/Los_Angeles (PST/PDT)
+python3 server.py
+
+# Use Eastern time
+TIMEZONE="America/New_York" python3 server.py
+
+# Use UTC
+TIMEZONE="UTC" python3 server.py
+```
+
+Valid timezone identifiers: any from the [IANA timezone database](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) (e.g., `America/Chicago`, `Europe/London`, `Asia/Tokyo`).
 
 ## Local Development
 
@@ -112,6 +139,9 @@ export REFRESH_SECONDS=60
 - `IMAGE_TIMEOUT` - Generation timeout in seconds (default: 300)
 - `IMAGE_PROVIDER` - "swarmui" (default) or "openai"
 - `DATE` - Date override for testing seasons (format: YYYY-MM-DD or MM-DD)
+- `TIMEZONE` - Timezone for date calculations (default: America/Los_Angeles)
+- `DEBUG` - Enable debug logging (default: false, set to "true" for verbose logs)
+- `ENABLE_DOCS` - Enable FastAPI documentation endpoints (default: false, set to "true" for /docs and /redoc)
 
 **SwarmUI Settings:**
 - `SWARMUI` - SwarmUI API base URL (default: http://localhost:7801)

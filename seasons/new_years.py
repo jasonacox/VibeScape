@@ -5,9 +5,14 @@ Generates scenes celebrating the new year with fireworks,
 celebrations, fresh starts, and festive gatherings — with a
 dreamy, seasonal-memory vibe.
 """
+import os
 import random
 from datetime import datetime, date
+from zoneinfo import ZoneInfo
 from .base import SeasonBase
+
+# Timezone to use for date calculations (configurable via TIMEZONE env var, defaults to PST/PDT)
+TIMEZONE = ZoneInfo(os.environ.get("TIMEZONE", "America/Los_Angeles"))
 
 
 class NewYears(SeasonBase):
@@ -104,7 +109,7 @@ class NewYears(SeasonBase):
         - Year is "next year" during December, otherwise current year.
         - Year text is only injected during a New Year window (Dec 20–Jan 5) by default.
         """
-        now = datetime.now()
+        now = datetime.now(TIMEZONE)
 
         # Determine which year to display (more sensible across the year)
         if now.month == 12:

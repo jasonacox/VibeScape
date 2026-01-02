@@ -114,14 +114,14 @@ if SWARMUI and not SWARMUI.startswith("http://") and not SWARMUI.startswith("htt
 IMAGE_MODEL = os.environ.get("IMAGE_MODEL", "Flux/flux1-schnell-fp8")
 IMAGE_CFGSCALE = float(os.environ.get("IMAGE_CFGSCALE", 1.0))
 IMAGE_STEPS = int(os.environ.get("IMAGE_STEPS", 6))
-IMAGE_WIDTH = int(os.environ.get("IMAGE_WIDTH", 1024))
-IMAGE_HEIGHT = int(os.environ.get("IMAGE_HEIGHT", 1024))
+IMAGE_WIDTH = int(os.environ.get("IMAGE_WIDTH", 1280)) # 1024
+IMAGE_HEIGHT = int(os.environ.get("IMAGE_HEIGHT", 720)) # 1024
 IMAGE_SEED = int(os.environ.get("IMAGE_SEED", -1))
 IMAGE_TIMEOUT = int(os.environ.get("IMAGE_TIMEOUT", 300))
 IMAGE_PROVIDER = os.environ.get("IMAGE_PROVIDER", "swarmui").lower()
 
 # Server version
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 
 # OpenAI image settings
 OPENAI_IMAGE_API_KEY = os.environ.get("OPENAI_IMAGE_API_KEY", "")
@@ -160,6 +160,7 @@ SESSION_STATE_LOCK = threading.Lock()
 # Image cache (last generated image and metadata)
 LAST_IMAGE: dict | None = None
 LAST_IMAGE_TIME: float | None = None
+GENERATION_IN_PROGRESS = False
 IMAGE_CACHE_LOCK = threading.Lock()
 
 # In-memory cached icons (generated on startup, no lock needed for reads)
@@ -169,6 +170,7 @@ FAVICON_32_BYTES: bytes | None = None
 FAVICON_ICO_BYTES: bytes | None = None
 # Stats (generation metrics)
 IMAGES_GENERATED = 0
+IMAGES_FAILED = 0
 STATS_LOCK = threading.Lock()
 # Generation time stats (seconds)
 GEN_TIME_COUNT = 0
@@ -177,7 +179,8 @@ GEN_TIME_MIN: float | None = None
 GEN_TIME_MAX: float | None = None
 
 # Logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+LOG_LEVEL = logging.DEBUG if os.environ.get("DEBUG", "").lower() in ("true", "1", "yes") else logging.INFO
+logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("vibescape_server")
 logger.info("Starting VibeScape server - version %s", VERSION)
 # Log effective configuration on startup (redact sensitive values)
@@ -301,18 +304,48 @@ async def _lifespan(app):
     
     # Generate initial image in background (don't block server startup)
     async def _generate_initial_image():
+        global LAST_IMAGE, LAST_IMAGE_TIME
+        global IMAGES_GENERATED, IMAGES_FAILED, GEN_TIME_COUNT, GEN_TIME_SUM, GEN_TIME_MIN, GEN_TIME_MAX
         try:
             logger.info("Generating initial image for cache...")
+            loop = asyncio.get_running_loop()
+            t0 = loop.time()
             initial_result = await generate_scene()
+            elapsed = loop.time() - t0
+            
             if "error" not in initial_result:
-                global LAST_IMAGE, LAST_IMAGE_TIME
+                # Update stats
+                try:
+                    with STATS_LOCK:
+                        IMAGES_GENERATED += 1
+                        GEN_TIME_COUNT += 1
+                        GEN_TIME_SUM += elapsed
+                        if GEN_TIME_MIN is None or elapsed < GEN_TIME_MIN:
+                            GEN_TIME_MIN = elapsed
+                        if GEN_TIME_MAX is None or elapsed > GEN_TIME_MAX:
+                            GEN_TIME_MAX = elapsed
+                except Exception:
+                    logger.exception("Failed to update generation stats")
+                
                 with IMAGE_CACHE_LOCK:
                     LAST_IMAGE = initial_result
                     LAST_IMAGE_TIME = time.time()
                 logger.info("Successfully generated and cached initial image")
             else:
+                # Count failure
+                try:
+                    with STATS_LOCK:
+                        IMAGES_FAILED += 1
+                except Exception:
+                    logger.exception("Failed to update failure stats")
                 logger.warning("Failed to generate initial image: %s", initial_result.get("error"))
         except Exception:
+            # Count exception as failure
+            try:
+                with STATS_LOCK:
+                    IMAGES_FAILED += 1
+            except Exception:
+                pass
             logger.exception("Failed to generate initial image at startup")
     
     # Start background task for initial image generation
@@ -693,7 +726,7 @@ async def index(request: Request, refresh: int | None = None):
 async def image_endpoint(request: Request):
     """Generate and return a new seasonal scene as JSON with a `image_data` data URI."""
     # Declare globals at the top
-    global CONNECTED_VIEWERS, LAST_ACTIVITY, LAST_IMAGE, LAST_IMAGE_TIME
+    global CONNECTED_VIEWERS, LAST_ACTIVITY, LAST_IMAGE, LAST_IMAGE_TIME, GENERATION_IN_PROGRESS
     global IMAGES_GENERATED, GEN_TIME_COUNT, GEN_TIME_SUM, GEN_TIME_MIN, GEN_TIME_MAX
     
     # Register/refresh session for this image request
@@ -719,44 +752,94 @@ async def image_endpoint(request: Request):
         CONNECTED_VIEWERS = session_count
         LAST_ACTIVITY = now
 
-    # Rate limit: only generate if REFRESH_SECONDS has elapsed since last generation
+    # Check cache and generation status
     with IMAGE_CACHE_LOCK:
         last_time = LAST_IMAGE_TIME
         cached_result = LAST_IMAGE
+        generation_in_progress = GENERATION_IN_PROGRESS
     
-    if last_time and cached_result:
+    # Determine if we need to generate a new image
+    should_generate = False
+    if not cached_result:
+        # No cached image at all
+        should_generate = True
+    elif last_time:
         elapsed_since_last = now - last_time
-        if elapsed_since_last < DEFAULT_REFRESH:
-            logger.debug("Cache: %.1fs since last generation (min %ds) — returning cached image", 
+        if elapsed_since_last >= DEFAULT_REFRESH:
+            # TTL expired
+            should_generate = True
+            logger.debug("Cache expired (%.1fs since last generation, TTL=%ds) — triggering background generation", 
                        elapsed_since_last, DEFAULT_REFRESH)
-            return JSONResponse(content=cached_result)
-
-    # Measure generation time and update stats only for successful generations
-    loop = asyncio.get_running_loop()
-    t0 = loop.time()
-    result = await generate_scene()
-    elapsed = loop.time() - t0
-    if "error" not in result:
-        try:
-            with STATS_LOCK:
-                IMAGES_GENERATED += 1
-                GEN_TIME_COUNT += 1
-                GEN_TIME_SUM += elapsed
-                if GEN_TIME_MIN is None or elapsed < GEN_TIME_MIN:
-                    GEN_TIME_MIN = elapsed
-                if GEN_TIME_MAX is None or elapsed > GEN_TIME_MAX:
-                    GEN_TIME_MAX = elapsed
-        except Exception:
-            logger.exception("Failed to update generation stats")
-    if "error" in result:
-        return JSONResponse(status_code=500, content={"error": result["error"]})
-    # Cache the last successful image so the index page can show it immediately
-    with IMAGE_CACHE_LOCK:
-        LAST_IMAGE = result
-        LAST_IMAGE_TIME = time.time()
-    # Add cache control header matching REFRESH_SECONDS
-    headers = {"Cache-Control": f"public, max-age={DEFAULT_REFRESH}"}
-    return JSONResponse(content=result, headers=headers)
+    
+    # If we should generate and no generation in progress, start background generation
+    if should_generate and not generation_in_progress:
+        # Background task to generate new image
+        async def _background_generate():
+            global LAST_IMAGE, LAST_IMAGE_TIME, GENERATION_IN_PROGRESS
+            global IMAGES_GENERATED, IMAGES_FAILED, GEN_TIME_COUNT, GEN_TIME_SUM, GEN_TIME_MIN, GEN_TIME_MAX
+            
+            # Set generation flag
+            with IMAGE_CACHE_LOCK:
+                GENERATION_IN_PROGRESS = True
+            
+            try:
+                # Measure generation time
+                loop = asyncio.get_running_loop()
+                t0 = loop.time()
+                result = await generate_scene()
+                elapsed = loop.time() - t0
+                
+                if "error" not in result:
+                    # Update stats
+                    try:
+                        with STATS_LOCK:
+                            IMAGES_GENERATED += 1
+                            GEN_TIME_COUNT += 1
+                            GEN_TIME_SUM += elapsed
+                            if GEN_TIME_MIN is None or elapsed < GEN_TIME_MIN:
+                                GEN_TIME_MIN = elapsed
+                            if GEN_TIME_MAX is None or elapsed > GEN_TIME_MAX:
+                                GEN_TIME_MAX = elapsed
+                    except Exception:
+                        logger.exception("Failed to update generation stats")
+                    
+                    # Cache the new image
+                    with IMAGE_CACHE_LOCK:
+                        LAST_IMAGE = result
+                        LAST_IMAGE_TIME = time.time()
+                    logger.info("Background generation completed successfully")
+                else:
+                    # Count failure
+                    try:
+                        with STATS_LOCK:
+                            IMAGES_FAILED += 1
+                    except Exception:
+                        logger.exception("Failed to update failure stats")
+                    logger.error("Background generation failed: %s", result.get("error"))
+            except Exception:
+                # Count exception as failure
+                try:
+                    with STATS_LOCK:
+                        IMAGES_FAILED += 1
+                except Exception:
+                    pass
+                logger.exception("Background generation exception")
+            finally:
+                # Always clear the generation flag
+                with IMAGE_CACHE_LOCK:
+                    GENERATION_IN_PROGRESS = False
+        
+        # Start background task (fire and forget)
+        asyncio.create_task(_background_generate())
+        logger.debug("Started background image generation task")
+    
+    # Always return immediately with cached image (or placeholder if none)
+    if cached_result:
+        headers = {"Cache-Control": f"public, max-age={DEFAULT_REFRESH}"}
+        return JSONResponse(content=cached_result, headers=headers)
+    else:
+        # No cached image yet, return placeholder
+        return JSONResponse(content={"image_data": None, "prompt": "Generating first image..."})
 
 
 @app.get("/season")
@@ -806,6 +889,7 @@ async def stats():
         current = CONNECTED_VIEWERS
         peak = MAX_CONNECTED_VIEWERS
         count = IMAGES_GENERATED
+        failed = IMAGES_FAILED
         gen_count = GEN_TIME_COUNT
         gen_sum = GEN_TIME_SUM
         gen_min = GEN_TIME_MIN
@@ -827,6 +911,7 @@ async def stats():
             "current_connected": current,
             "peak_connected": peak,
             "images_generated": count,
+            "images_failed": failed,
             "generation_time_min_s": gen_min,
             "generation_time_max_s": gen_max,
             "generation_time_avg_s": avg,
