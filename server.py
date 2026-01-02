@@ -121,7 +121,7 @@ IMAGE_TIMEOUT = int(os.environ.get("IMAGE_TIMEOUT", 300))
 IMAGE_PROVIDER = os.environ.get("IMAGE_PROVIDER", "swarmui").lower()
 
 # Server version
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 
 # OpenAI image settings
 OPENAI_IMAGE_API_KEY = os.environ.get("OPENAI_IMAGE_API_KEY", "")
@@ -578,10 +578,10 @@ async def index(request: Request, refresh: int | None = None):
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <title>VibeScape - AI Powered Seasonal Dreams</title>
         <style>
-            html,body {{ height:100%; margin:0; background:#111; color:#fff; display:flex; align-items:center; justify-content:center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
-            #imgContainer {{ position:relative; display:inline-block; }}
-            #img {{ max-width:100%; max-height:100vh; box-shadow: 0 8px 30px rgba(0,0,0,0.6); display:block; }}
-            #downloadBtn {{ position:absolute; top:16px; right:16px; padding:10px 16px; background:rgba(255,215,0,0.95); color:#111; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; opacity:0; transition:opacity 0.2s; box-shadow:0 4px 12px rgba(0,0,0,0.4); }}
+            html,body {{ height:100%; margin:0; background:#111; color:#fff; display:flex; align-items:center; justify-content:center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow:hidden; }}
+            #imgContainer {{ position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }}
+            #img {{ width:100%; height:100%; object-fit:contain; box-shadow: 0 8px 30px rgba(0,0,0,0.6); display:block; }}
+            #downloadBtn {{ position:absolute; top:16px; right:16px; padding:10px 16px; background:rgba(255,215,0,0.95); color:#111; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; opacity:0; transition:opacity 0.2s; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:10; }}
             #downloadBtn:hover {{ background:#ffed4e; }}
             #imgContainer:hover #downloadBtn {{ opacity:1; }}
             /* Bottom-center translucent prompt overlay */
@@ -690,13 +690,31 @@ async def index(request: Request, refresh: int | None = None):
                         }} catch (e) {{}}
                     }});
 
-                    async function fetchImage() {{
+                    // Track last known image timestamp to avoid re-downloading same image
+                    let lastImageTimestamp = null;
+
+                    async function checkForNewImage() {{
                         try {{
+                            // First check lightweight status endpoint
+                            const statusRes = await fetch('/image/status');
+                            if (!statusRes.ok) return;
+                            const status = await statusRes.json();
+                            
+                            // If no image available yet, skip
+                            if (!status.available) return;
+                            
+                            // If timestamp hasn't changed, skip download
+                            if (lastImageTimestamp !== null && status.timestamp === lastImageTimestamp) {{
+                                return;
+                            }}
+                            
+                            // New image available - fetch it
                             const res = await fetch('/image');
                             if (!res.ok) return;
                             const j = await res.json();
                             if (j.image_data) {{
                                 showImage(j.image_data, j.prompt);
+                                lastImageTimestamp = status.timestamp;
                             }}
                         }} catch (e) {{
                             console.error(e);
@@ -707,13 +725,13 @@ async def index(request: Request, refresh: int | None = None):
                     if (isFirstVisit) {{
                         // On first visit, wait 5s before starting to poll
                         setTimeout(function() {{
-                            fetchImage();
-                            setInterval(fetchImage, pollInterval);
+                            checkForNewImage();
+                            setInterval(checkForNewImage, pollInterval);
                         }}, 5000);
                     }} else {{
                         // On subsequent visits, start polling immediately
-                        fetchImage();
-                        setInterval(fetchImage, pollInterval);
+                        checkForNewImage();
+                        setInterval(checkForNewImage, pollInterval);
                     }}
                 </script>
             </body>
@@ -835,11 +853,35 @@ async def image_endpoint(request: Request):
     
     # Always return immediately with cached image (or placeholder if none)
     if cached_result:
+        # Add timestamp to response for client-side caching
+        response_data = cached_result.copy()
+        response_data["timestamp"] = last_time
         headers = {"Cache-Control": f"public, max-age={DEFAULT_REFRESH}"}
-        return JSONResponse(content=cached_result, headers=headers)
+        return JSONResponse(content=response_data, headers=headers)
     else:
         # No cached image yet, return placeholder
-        return JSONResponse(content={"image_data": None, "prompt": "Generating first image..."})
+        return JSONResponse(content={"image_data": None, "prompt": "Generating first image...", "timestamp": None})
+
+
+@app.get("/image/status")
+async def image_status():
+    """Lightweight endpoint to check if a new image is available without downloading full payload."""
+    with IMAGE_CACHE_LOCK:
+        last_time = LAST_IMAGE_TIME
+        has_image = LAST_IMAGE is not None
+    
+    if has_image and last_time:
+        return {
+            "available": True,
+            "timestamp": last_time,
+            "age_seconds": time.time() - last_time
+        }
+    else:
+        return {
+            "available": False,
+            "timestamp": None,
+            "age_seconds": None
+        }
 
 
 @app.get("/season")

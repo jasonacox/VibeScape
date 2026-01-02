@@ -11,14 +11,23 @@ import Foundation
 import SwiftUI
 import Combine
 
+/// JSON payload returned by the VibeScape `/image/status` endpoint.
+struct StatusResponse: Codable {
+    let available: Bool
+    let timestamp: Double?
+    let age_seconds: Double?
+}
+
 /// JSON payload returned by the VibeScape `/image` endpoint.
 struct ImageResponse: Codable {
-    let prompt: String
-    let image_data: String
+    let prompt: String?
+    let image_data: String?
+    let timestamp: Double?
     
     enum CodingKeys: String, CodingKey {
         case prompt
         case image_data
+        case timestamp
     }
 }
 
@@ -34,7 +43,7 @@ class ImageService: ObservableObject {
     
     private var pollTimer: DispatchSourceTimer?
     private let pollQueue = DispatchQueue(label: "com.jasonacox.vibescape.poll", qos: .userInitiated)
-    private var lastImageData: String?
+    private var lastImageTimestamp: Double?
     private var isFetching = false
 
     static let defaultImageURL = "https://vibescape.jasonacox.com/image"
@@ -42,6 +51,17 @@ class ImageService: ObservableObject {
 
     private(set) var imageURL: String
     private let refreshInterval: TimeInterval = 10.0
+    
+    /// Computed property to get status URL from image URL
+    private var statusURL: String {
+        // Replace /image with /image/status
+        if imageURL.hasSuffix("/image") {
+            return imageURL + "/status"
+        } else {
+            // Fallback: append /status
+            return imageURL.replacingOccurrences(of: "/image", with: "/image/status")
+        }
+    }
     
     /// Dedicated URL session with caching disabled to ensure fresh requests hit the server.
     private lazy var urlSession: URLSession = {
@@ -84,14 +104,14 @@ class ImageService: ObservableObject {
     func startFetching() {
         stopFetching()
 
-        // Fetch immediately
+        // Fetch immediately (first time, always fetch full image)
         fetchImage()
 
         // Poll reliably on a dispatch queue (avoids run-loop mode pauses).
         let timer = DispatchSource.makeTimerSource(flags: .strict, queue: pollQueue)
         timer.schedule(deadline: .now() + refreshInterval, repeating: refreshInterval, leeway: .milliseconds(100))
         timer.setEventHandler { [weak self] in
-            self?.fetchImage()
+            self?.checkStatus()
         }
         pollTimer = timer
         timer.resume()
@@ -103,6 +123,52 @@ class ImageService: ObservableObject {
         pollTimer?.cancel()
         pollTimer = nil
         isFetching = false
+    }
+    
+    /// Checks the lightweight status endpoint to see if a new image is available.
+    /// Only fetches the full image if the timestamp has changed.
+    private func checkStatus() {
+        guard let url = URL(string: statusURL) else {
+            // Fallback to full fetch if status URL is invalid
+            fetchImage()
+            return
+        }
+        
+        urlSession.dataTask(with: url) { [weak self] data, response, error in
+            guard let self = self else { return }
+            
+            if error != nil {
+                // On error, try full fetch as fallback
+                self.fetchImage()
+                return
+            }
+            
+            guard let data = data else {
+                self.fetchImage()
+                return
+            }
+            
+            do {
+                let status = try JSONDecoder().decode(StatusResponse.self, from: data)
+                
+                // If no image available yet, skip
+                guard status.available, let timestamp = status.timestamp else {
+                    return
+                }
+                
+                // If timestamp hasn't changed, skip download
+                if let lastTimestamp = self.lastImageTimestamp, timestamp == lastTimestamp {
+                    return
+                }
+                
+                // New image available - fetch it
+                self.fetchImage()
+                
+            } catch {
+                // On parse error, try full fetch as fallback
+                self.fetchImage()
+            }
+        }.resume()
     }
     
     private func fetchImage() {
@@ -138,27 +204,25 @@ class ImageService: ObservableObject {
             do {
                 let imageResponse = try JSONDecoder().decode(ImageResponse.self, from: data)
                 
-                // Only update if the image data has changed
-                if imageResponse.image_data != self.lastImageData {
-                    // Parse base64 image data
-                    if let imageData = self.parseBase64Image(imageResponse.image_data),
-                       let uiImage = UIImage(data: imageData) {
-                        DispatchQueue.main.async {
-                            self.currentImage = uiImage
-                            self.currentPrompt = imageResponse.prompt
-                            self.errorMessage = nil
-                            self.lastImageData = imageResponse.image_data
-                        }
-                    } else {
-                        DispatchQueue.main.async {
-                            self.errorMessage = "Failed to decode image data"
-                        }
-                    }
-                } else {
-                    // Same image, just update prompt if needed and clear errors
+                // Check if we have valid image data
+                guard let imageDataString = imageResponse.image_data else {
+                    // No image data (still generating)
+                    return
+                }
+                
+                // Parse base64 image data
+                if let imageData = self.parseBase64Image(imageDataString),
+                   let uiImage = UIImage(data: imageData) {
                     DispatchQueue.main.async {
+                        self.currentImage = uiImage
                         self.currentPrompt = imageResponse.prompt
                         self.errorMessage = nil
+                        // Update timestamp to track this image
+                        self.lastImageTimestamp = imageResponse.timestamp
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        self.errorMessage = "Failed to decode image data"
                     }
                 }
             } catch {

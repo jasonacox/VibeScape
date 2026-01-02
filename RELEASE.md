@@ -1,6 +1,39 @@
 # VibeScape Release Notes
 
 
+## Version 1.0.5 (2026-01-02)
+
+### Bandwidth Optimization
+- **New `/image/status` Endpoint**: Lightweight status check (~100 bytes) returns image availability and timestamp without full payload
+- **Smart Client Polling**: Web UI and tvOS app now check status first, only downloading full image when timestamp changes
+- **Bandwidth Reduction**: ~99% reduction in network traffic during idle periods (1-2MB image vs 100 byte status check)
+- **Timestamp Tracking**: Added `timestamp` field to `/image` response for client-side change detection
+
+### UI Improvements
+- **Full-Screen Image Display**: Web UI now scales images to fill browser viewport while maintaining aspect ratio using `object-fit: contain`
+- **tvOS Error Handling**: Error messages only display when no cached image exists, providing graceful degradation during server restarts
+
+### API Changes
+- **Breaking**: `/image` response now includes `timestamp` field (existing clients may need updates)
+- **New endpoint**: `GET /image/status` returns `{available: bool, timestamp: float, age_seconds: float}`
+- **Optional fields**: `image_data` and `prompt` in `/image` response are now nullable for placeholder states
+
+### Client Updates
+- Web UI implements status polling with timestamp comparison
+- tvOS app implements status polling with graceful error handling
+- Both clients maintain last known timestamp to avoid redundant downloads
+
+### New: Apple TV (tvOS) App
+- **First Release**: Native tvOS client application for Apple TV
+- **Full-Screen Display**: Optimized for television viewing with automatic scaling
+- **Smart Polling**: Uses `/image/status` endpoint for bandwidth-efficient updates
+- **Configurable Server**: Built-in settings to point to any VibeScape server instance
+- **Graceful Fallback**: Displays last known image during server restarts or network issues
+- **Auto-Refresh**: Continuous polling for new seasonal content
+- See [tvos/README.md](tvos/README.md) for build and installation instructions
+
+---
+
 ## Version 1.0.4 (2026-01-01)
 
 ### Performance & Architecture Improvements

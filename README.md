@@ -15,6 +15,7 @@ An always-on ambient generative art experience that creates seasonal imagery to 
 - **Simple UI** - Maximizes each generated scene for impact, shows the prompt, auto-refreshes at configurable intervals
 - **Startup Cache** - Pre-generates an image on startup for instant first view
 - **Dual Providers** - Works with SwarmUI or OpenAI-compatible image generation APIs
+- **Apple TV App** - Native tvOS client for displaying VibeScape on Apple TV (see [tvos/README.md](tvos/README.md))
 
 ## Quick Start
 
@@ -71,6 +72,7 @@ The blender automatically interpolates between key dates for smooth daily transi
 
 - `/` - Main UI (auto-refreshing image viewer)
 - `/image` - JSON: generates/returns new scene (instant response with cached image, generation happens in background)
+- `/image/status` - JSON: lightweight status check (~100 bytes) returns `{available, timestamp, age_seconds}` to check if new image is ready without downloading full payload
 - `/season` - JSON: current active seasons and weights
 - `/stats` - JSON: usage statistics including generation times, success/failure counts, and cache status
 - `/health` - Health check
@@ -85,6 +87,8 @@ The blender automatically interpolates between key dates for smooth daily transi
 **Startup Cache**: Initial image generation happens in the background during server startup, allowing the UI to be served immediately without waiting.
 
 **Failure Tracking**: The `/stats` endpoint includes `images_failed` counter to help with operational monitoring of the generation backend.
+
+**Bandwidth Optimization**: The `/image/status` endpoint provides a lightweight (~100 bytes) way to check if a new image is available without downloading the full payload (1-2MB). Clients poll this endpoint frequently and only fetch `/image` when the timestamp changes, reducing bandwidth by ~99% during idle periods.
 
 ## Timezone Configuration
 

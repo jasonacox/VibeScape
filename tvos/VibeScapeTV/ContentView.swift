@@ -75,7 +75,7 @@ struct ContentView: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 60))
                         .foregroundColor(.yellow)
-                    Text("Error Loading Image")
+                    Text("Loading Image...")
                         .font(.title)
                         .foregroundColor(.white)
                     Text(error)
