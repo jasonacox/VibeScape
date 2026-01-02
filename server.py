@@ -79,6 +79,7 @@ import uvicorn
 
 # Ensure chatbot package is importable when running from repo root
 ROOT = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(ROOT, "static")
 CHATBOT_PATH = os.path.join(ROOT, "chatbot")
 if CHATBOT_PATH not in sys.path:
     sys.path.insert(0, CHATBOT_PATH)
@@ -208,6 +209,44 @@ except Exception:
     logger.exception("Failed to log configuration")
 
 
+def _make_landscape_icon(size: int) -> Image.Image:
+    """Create a simple landscape icon representing VibeScape (fallback if static files missing)."""
+    im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(im)
+    
+    # Sky gradient (upper 60%)
+    sky_height = int(size * 0.6)
+    for y in range(sky_height):
+        ratio = y / sky_height
+        r = int(135 + (70 - 135) * ratio)
+        g = int(206 + (130 - 206) * ratio)
+        b = int(235 + (180 - 235) * ratio)
+        draw.line([(0, y), (size, y)], fill=(r, g, b, 255))
+    
+    # Ground (lower 40%)
+    draw.rectangle((0, sky_height, size, size), fill=(76, 187, 23, 255))
+    
+    # Sun in top right
+    sun_r = int(size * 0.12)
+    sun_x = int(size * 0.75)
+    sun_y = int(size * 0.25)
+    draw.ellipse((sun_x - sun_r, sun_y - sun_r, sun_x + sun_r, sun_y + sun_r), fill=(255, 220, 100, 255))
+    
+    # Mountains
+    mountain_color = (100, 100, 120, 255)
+    draw.polygon([(0, sky_height), (int(size * 0.35), int(size * 0.35)), (int(size * 0.55), sky_height)], fill=mountain_color)
+    draw.polygon([(int(size * 0.45), sky_height), (int(size * 0.70), int(size * 0.25)), (size, sky_height)], fill=mountain_color)
+    
+    return im
+
+
+def _png_bytes_from_image(img: Image.Image) -> bytes:
+    """Convert PIL Image to PNG bytes."""
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 async def _background_generate(source: str = "request"):
     """Shared background generation task. Updates cache and stats.
     
@@ -321,76 +360,45 @@ async def _lifespan(app):
     
     cleanup_task = asyncio.create_task(_cleanup_sessions())
     
-    # Generate and cache small PNG icons to avoid regenerating on each request
+    # Load cached icons from static directory (or generate fallback)
     try:
-        def _make_landscape_icon(size: int) -> Image.Image:
-            """Create a simple landscape icon representing VibeScape."""
-            im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-            draw = ImageDraw.Draw(im)
-            
-            # Sky gradient (upper 60%)
-            sky_height = int(size * 0.6)
-            for y in range(sky_height):
-                # Gradient from light blue to deeper blue
-                ratio = y / sky_height
-                r = int(135 + (70 - 135) * ratio)
-                g = int(206 + (130 - 206) * ratio)
-                b = int(235 + (180 - 235) * ratio)
-                draw.line([(0, y), (size, y)], fill=(r, g, b, 255))
-            
-            # Ground (lower 40%)
-            ground_color = (76, 187, 23, 255)  # Green
-            draw.rectangle((0, sky_height, size, size), fill=ground_color)
-            
-            # Sun in top right
-            sun_r = int(size * 0.12)
-            sun_x = int(size * 0.75)
-            sun_y = int(size * 0.25)
-            draw.ellipse((sun_x - sun_r, sun_y - sun_r, sun_x + sun_r, sun_y + sun_r), 
-                        fill=(255, 220, 100, 255))
-            
-            # Mountains (simple triangles)
-            mountain_color = (100, 100, 120, 255)
-            # Left mountain
-            draw.polygon([
-                (0, sky_height),
-                (int(size * 0.35), int(size * 0.35)),
-                (int(size * 0.55), sky_height)
-            ], fill=mountain_color)
-            # Right mountain
-            draw.polygon([
-                (int(size * 0.45), sky_height),
-                (int(size * 0.70), int(size * 0.25)),
-                (size, sky_height)
-            ], fill=mountain_color)
-            
-            return im
-
-        def _png_bytes_from_image(img: Image.Image) -> bytes:
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            return buf.getvalue()
-
-        # Build and cache the common sizes (PNG + multi-size ICO)
         global APPLE_TOUCH_BYTES, FAVICON_32_BYTES, FAVICON_ICO_BYTES
         with ICON_LOCK:
-            try:
-                if APPLE_TOUCH_BYTES is None:
-                    APPLE_TOUCH_BYTES = _png_bytes_from_image(_make_landscape_icon(ICON_SIZE_LARGE))
-                if FAVICON_32_BYTES is None:
-                    FAVICON_32_BYTES = _png_bytes_from_image(_make_landscape_icon(ICON_SIZE_SMALL))
-                if FAVICON_ICO_BYTES is None:
-                    # Create ICO containing several sizes
-                    sizes = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
-                    max_size = max(s[0] for s in sizes)
-                    base = _make_landscape_icon(max_size)
-                    buf = io.BytesIO()
-                    base.save(buf, format="ICO", sizes=sizes)
-                    FAVICON_ICO_BYTES = buf.getvalue()
-            except Exception:
-                logger.exception("Failed to generate cached icons at startup")
+            # Try to load pre-generated icons from static/
+            apple_path = os.path.join(STATIC_DIR, "apple-touch-icon.png")
+            fav32_path = os.path.join(STATIC_DIR, "favicon-32x32.png")
+            ico_path = os.path.join(STATIC_DIR, "favicon.ico")
+            
+            if os.path.exists(apple_path):
+                with open(apple_path, "rb") as f:
+                    APPLE_TOUCH_BYTES = f.read()
+                logger.debug("Loaded apple-touch-icon.png from static/")
+            else:
+                logger.warning("static/apple-touch-icon.png not found, generating fallback")
+                APPLE_TOUCH_BYTES = _png_bytes_from_image(_make_landscape_icon(ICON_SIZE_LARGE))
+            
+            if os.path.exists(fav32_path):
+                with open(fav32_path, "rb") as f:
+                    FAVICON_32_BYTES = f.read()
+                logger.debug("Loaded favicon-32x32.png from static/")
+            else:
+                logger.warning("static/favicon-32x32.png not found, generating fallback")
+                FAVICON_32_BYTES = _png_bytes_from_image(_make_landscape_icon(ICON_SIZE_SMALL))
+            
+            if os.path.exists(ico_path):
+                with open(ico_path, "rb") as f:
+                    FAVICON_ICO_BYTES = f.read()
+                logger.debug("Loaded favicon.ico from static/")
+            else:
+                logger.warning("static/favicon.ico not found, generating fallback")
+                sizes = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
+                max_size = max(s[0] for s in sizes)
+                base = _make_landscape_icon(max_size)
+                buf = io.BytesIO()
+                base.save(buf, format="ICO", sizes=sizes)
+                FAVICON_ICO_BYTES = buf.getvalue()
     except Exception:
-        logger.exception("Unexpected error during startup icon generation")
+        logger.exception("Failed to load icons from static/")
     
     # Generate initial image in background (don't block server startup)
     # Set flag BEFORE creating task to prevent race conditions with early requests
