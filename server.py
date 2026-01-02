@@ -627,21 +627,21 @@ async def index(request: Request, refresh: int | None = None):
                         splash.style.display = 'none';
                     }}
 
-                    // If NOT first visit, show cached image immediately
-                    if (!isFirstVisit) {{
+                    // Show splash screen if no image available OR if first visit
+                    if (!initialImage || isFirstVisit) {{
+                        splash.style.display = 'flex';
+                        if (isFirstVisit) {{
+                            localStorage.setItem('vibescape_visited', 'true');
+                        }}
+                        // If we have an image, show it after 2 seconds
                         if (initialImage) {{
-                            showImage(initialImage, initialPrompt);
+                            setTimeout(function() {{
+                                showImage(initialImage, initialPrompt);
+                            }}, 2000);
                         }}
                     }} else {{
-                        // First visit: show splash for 2 seconds, then show image if available
-                        splash.style.display = 'flex';
-                        localStorage.setItem('vibescape_visited', 'true');
-                        setTimeout(function() {{
-                            if (initialImage) {{
-                                showImage(initialImage, initialPrompt);
-                            }}
-                            // If no image, keep splash showing
-                        }}, 2000);
+                        // Not first visit and have cached image: show immediately
+                        showImage(initialImage, initialPrompt);
                     }}
 
                     // Notify server on unload that we're disconnecting
