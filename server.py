@@ -53,6 +53,11 @@ Endpoints:
   /connect           - POST: register viewer connection
   /disconnect        - POST: unregister viewer
   /viewers           - GET: current viewer count
+
+Author:
+    Jason A. Cox
+    github.com/jasonacox/VibeScape
+    1 January 2026
 """
 import io
 import os
