@@ -18,6 +18,15 @@ struct ContentView: View {
     @State private var showSplash = false
     @State private var showPrompt = true
     @State private var imageURL = ImageService.loadImageURL()
+    @State private var showConnectionError = false
+    
+    /// Check if this is a connection error (server offline or wrong URL)
+    private var isConnectionError: Bool {
+        guard let error = imageService.errorMessage else { return false }
+        return error.contains("Could not connect") || 
+               error.contains("Network error") ||
+               error.contains("Invalid URL")
+    }
     
     var body: some View {
         ZStack {
@@ -69,8 +78,10 @@ struct ContentView: View {
                 .ignoresSafeArea()
             }
             
-            // Error message if loading fails
-            if let error = imageService.errorMessage {
+            // Error message if loading fails (only show if no cached image and not a connection error)
+            if let error = imageService.errorMessage, 
+               imageService.currentImage == nil,
+               !isConnectionError {
                 VStack(spacing: 20) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 60))
@@ -105,6 +116,19 @@ struct ContentView: View {
         }
         .onChange(of: imageURL) { [imageService] newValue in
             _ = imageService.setImageURL(newValue)
+        }
+        .onChange(of: imageService.errorMessage) { error in
+            // Show connection error alert when no image is cached
+            if isConnectionError && imageService.currentImage == nil {
+                showConnectionError = true
+            }
+        }
+        .alert("Unable to Connect", isPresented: $showConnectionError) {
+            Button("Settings") {
+                showSplash = true
+            }
+        } message: {
+            Text("Could not connect to the VibeScape server.\n\nPlease check that the server is running and the URL is correct.")
         }
         .fullScreenCover(isPresented: $showSplash) {
             SplashView(isPresented: $showSplash, showPrompt: $showPrompt, imageURL: $imageURL)

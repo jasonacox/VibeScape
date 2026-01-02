@@ -152,8 +152,8 @@ export REFRESH_SECONDS=60
 - `IMAGE_MODEL` - Model name (default: Flux/flux1-schnell-fp8)
 - `IMAGE_CFGSCALE` - CFG scale (default: 1.0)
 - `IMAGE_STEPS` - Generation steps (default: 6)
-- `IMAGE_WIDTH` - Image width (default: 1024)
-- `IMAGE_HEIGHT` - Image height (default: 1024)
+- `IMAGE_WIDTH` - Image width (default: 1280)
+- `IMAGE_HEIGHT` - Image height (default: 720)
 
 **OpenAI Settings:**
 - `OPENAI_IMAGE_API_KEY` - OpenAI API key (required for openai provider)
