@@ -7,6 +7,7 @@
 //  1 January 2026
 
 import SwiftUI
+import UIKit
 
 /// Main tvOS screen: displays the latest VibeScape image and (optionally) the prompt.
 ///
@@ -86,10 +87,12 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
             imageService.startFetching()
             _ = imageService.setImageURL(imageURL)
         }
         .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
             imageService.stopFetching()
         }
         .animation(.easeInOut(duration: 0.3), value: showSplash)

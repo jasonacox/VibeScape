@@ -32,8 +32,10 @@ class ImageService: ObservableObject {
     @Published var currentPrompt: String?
     @Published var errorMessage: String?
     
-    private var timer: Timer?
+    private var pollTimer: DispatchSourceTimer?
+    private let pollQueue = DispatchQueue(label: "com.jasonacox.vibescape.poll")
     private var lastImageData: String?
+    private var isFetching = false
 
     static let defaultImageURL = "https://vibescape.jasonacox.com/image"
     static let imageURLUserDefaultsKey = "vibescape.imageURL"
@@ -72,31 +74,44 @@ class ImageService: ObservableObject {
     
     /// Starts polling immediately and then every `refreshInterval` seconds.
     func startFetching() {
+        stopFetching()
+
         // Fetch immediately
         fetchImage()
-        
-        // Then fetch every 10 seconds
-        timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
+
+        // Poll reliably on a dispatch queue (avoids run-loop mode pauses).
+        let timer = DispatchSource.makeTimerSource(queue: pollQueue)
+        timer.schedule(deadline: .now() + refreshInterval, repeating: refreshInterval, leeway: .milliseconds(250))
+        timer.setEventHandler { [weak self] in
             self?.fetchImage()
         }
+        pollTimer = timer
+        timer.resume()
     }
     
     /// Stops polling.
     func stopFetching() {
-        timer?.invalidate()
-        timer = nil
+        pollTimer?.setEventHandler {}
+        pollTimer?.cancel()
+        pollTimer = nil
+        isFetching = false
     }
     
     private func fetchImage() {
+        if isFetching { return }
+        isFetching = true
+
         guard let url = URL(string: imageURL) else {
             DispatchQueue.main.async {
                 self.errorMessage = "Invalid URL"
             }
+            isFetching = false
             return
         }
         
         URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
             guard let self = self else { return }
+            defer { self.isFetching = false }
             
             if let error = error {
                 DispatchQueue.main.async {
