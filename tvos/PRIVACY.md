@@ -60,7 +60,7 @@ If we update this Privacy Policy, we will post the new version in the App's repo
 If you have questions about this Privacy Policy, please contact:
 
 - **GitHub**: [github.com/jasonacox/VibeScape](https://github.com/jasonacox/VibeScape)
-- **Email**: jasonacox@users.noreply.github.com
+- **Issue**: [Send to @jasonacox](https://github.com/jasonacox/VibeScape/issues/new?body=@jasonacox)
 
 ## GitHub Issues and Contributions
 
