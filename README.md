@@ -1,5 +1,7 @@
 # VibeScape
 
+[![Backend Tests](https://github.com/jasonacox/VibeScape/actions/workflows/backend-tests.yml/badge.svg)](https://github.com/jasonacox/VibeScape/actions/workflows/backend-tests.yml)
+
 ## AI Powered Seasonal Dreams
 
 An always-on ambient generative art experience that creates seasonal imagery to match the time of year. VibeScape automatically generates beautiful, themed scenes that evolve throughout the year — from cozy winter landscapes and festive holiday celebrations to vibrant spring gardens and warm summer sunsets.
