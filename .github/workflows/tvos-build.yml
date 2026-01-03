@@ -40,20 +40,14 @@ jobs:
     - name: Build tvOS app
       run: |
         cd tvos
-        xcodebuild build \
-          -project VibeScapeTV.xcodeproj \
-          -scheme VibeScapeTV \
-          -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
-          -configuration Debug \
-          CODE_SIGNING_ALLOWED=NO \
-          CODE_SIGNING_REQUIRED=NO \
-          | xcpretty --color || true
+        # Get the first available Apple TV simulator ID
+        DESTINATION=$(xcrun simctl list devices available | grep -i "apple tv" | head -1 | grep -oE '[0-9A-F-]{36}')
+        echo "Using simulator: $DESTINATION"
         
-        # Check the actual build result
         xcodebuild build \
           -project VibeScapeTV.xcodeproj \
           -scheme VibeScapeTV \
-          -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
+          -destination "platform=tvOS Simulator,id=$DESTINATION" \
           -configuration Debug \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
