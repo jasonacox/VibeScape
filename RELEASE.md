@@ -1,6 +1,19 @@
 # VibeScape Release Notes
 
 
+## Version 1.0.8 (2026-01-03)
+
+### Image Quality Improvements
+- **Automatic Letterbox Removal**: Server now intelligently detects and removes black letterbox bars from generated images
+  - Smart detection algorithm checks for uniform darkness and low variance to distinguish letterbox bars from legitimate dark content
+  - Only scans top and bottom 10% of image to avoid false positives
+  - Requires minimum 10-pixel bar height to trigger cropping
+  - Logs detection: "Detected letterbox bars: top=X, bottom=Y pixels"
+  - Applies to both SwarmUI and OpenAI generated images
+  - Typical removal: 5-10% of image height when letterbox bars are present
+
+---
+
 ## Version 1.0.7 (2026-01-02)
 
 ### Image Display Improvements

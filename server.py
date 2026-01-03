@@ -122,7 +122,7 @@ IMAGE_TIMEOUT = int(os.environ.get("IMAGE_TIMEOUT", 300))
 IMAGE_PROVIDER = os.environ.get("IMAGE_PROVIDER", "swarmui").lower()
 
 # Server version
-VERSION = "1.0.7"
+VERSION = "1.0.8"
 
 # OpenAI image settings
 OPENAI_IMAGE_API_KEY = os.environ.get("OPENAI_IMAGE_API_KEY", "")
@@ -245,6 +245,72 @@ def _png_bytes_from_image(img: Image.Image) -> bytes:
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
+
+
+def _remove_letterbox(image: Image.Image, threshold: int = 15, min_bar_height: int = 10) -> Image.Image:
+    """
+    Detect and remove letterbox bars (black bars on top/bottom) from an image.
+    
+    Algorithm:
+    1. Check rows from top and bottom
+    2. A row is considered "letterbox" if its average brightness is below threshold
+       AND it has low variance (uniform darkness across width)
+    3. Stop when we hit a row with sufficient brightness or variance
+    4. Only crop if bars are at least min_bar_height pixels
+    
+    Args:
+        image: PIL Image to process
+        threshold: Maximum average brightness (0-255) to consider a row as letterbox
+        min_bar_height: Minimum height of letterbox bar to trigger cropping
+    
+    Returns:
+        Cropped image or original if no letterbox detected
+    """
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+    
+    width, height = image.size
+    pixels = image.load()
+    
+    def is_letterbox_row(y: int) -> bool:
+        """Check if a row appears to be a letterbox bar."""
+        # Sample brightness values across the row
+        samples = []
+        sample_step = max(1, width // 20)  # Sample ~20 points across width
+        
+        for x in range(0, width, sample_step):
+            r, g, b = pixels[x, y]
+            brightness = (r + g + b) / 3
+            samples.append(brightness)
+        
+        avg_brightness = sum(samples) / len(samples)
+        
+        # Calculate variance to detect uniform darkness
+        variance = sum((s - avg_brightness) ** 2 for s in samples) / len(samples)
+        
+        # Row is letterbox if dark AND uniform
+        return avg_brightness < threshold and variance < 100
+    
+    # Find top letterbox boundary
+    top_crop = 0
+    for y in range(height // 10):  # Only check top 10%
+        if not is_letterbox_row(y):
+            break
+        top_crop = y + 1
+    
+    # Find bottom letterbox boundary
+    bottom_crop = height
+    for y in range(height - 1, height - height // 10, -1):  # Only check bottom 10%
+        if not is_letterbox_row(y):
+            break
+        bottom_crop = y
+    
+    # Only crop if we found significant letterbox bars
+    if top_crop >= min_bar_height or (height - bottom_crop) >= min_bar_height:
+        logger.info("Detected letterbox bars: top=%d, bottom=%d pixels", top_crop, height - bottom_crop)
+        return image.crop((0, top_crop, width, bottom_crop))
+    
+    return image
 
 
 async def _background_generate(source: str = "request"):
@@ -511,6 +577,9 @@ async def _generate_swarmui(prompt: str) -> dict:
     except Exception:
         return {"error": "Unable to decode image data"}
 
+    # Remove letterbox bars if present
+    image = _remove_letterbox(image)
+
     # Resize down for web if necessary
     max_dim = 1024
     if image.width > max_dim or image.height > max_dim:
@@ -581,6 +650,9 @@ async def _generate_openai(prompt: str) -> dict:
         image = Image.open(io.BytesIO(base64.b64decode(image_b64)))
     except Exception:
         return {"error": "Unable to decode image data"}
+
+    # Remove letterbox bars if present
+    image = _remove_letterbox(image)
 
     # Resize down for web if necessary
     max_dim = 1024
