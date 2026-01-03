@@ -636,7 +636,7 @@ async def index(request: Request, refresh: int | None = None):
         <style>
             html,body {{ height:100%; margin:0; background:#111; color:#fff; display:flex; align-items:center; justify-content:center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow:hidden; }}
             #imgContainer {{ position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }}
-            #img {{ width:100%; height:100%; object-fit:contain; box-shadow: 0 8px 30px rgba(0,0,0,0.6); display:block; }}
+            #img {{ width:100%; height:100%; object-fit:cover; display:block; }}
             #downloadBtn {{ position:absolute; top:16px; right:16px; padding:10px 16px; background:rgba(255,215,0,0.95); color:#111; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; opacity:0; transition:opacity 0.2s; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:10; }}
             #downloadBtn:hover {{ background:#ffed4e; }}
             #imgContainer:hover #downloadBtn {{ opacity:1; }}

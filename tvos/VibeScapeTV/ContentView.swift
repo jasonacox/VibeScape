@@ -35,8 +35,9 @@ struct ContentView: View {
             if let image = imageService.currentImage {
                 Image(uiImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: .fit)
+                    .aspectRatio(contentMode: .fill)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
                     .ignoresSafeArea()
                     .transition(.opacity)
                     .animation(.easeInOut(duration: 0.5), value: imageService.currentImage)
