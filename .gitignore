@@ -220,3 +220,6 @@ DerivedData/
 
 # macOS
 .DS_Store
+
+# Local Tools and Media
+tvos/media/
