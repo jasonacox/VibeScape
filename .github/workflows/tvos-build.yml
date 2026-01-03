@@ -1,0 +1,59 @@
+# VibeScape tvOS App Build Verification
+#
+# Builds the tvOS app to verify it compiles successfully.
+# This catches Swift syntax errors, missing dependencies, and build configuration issues.
+#
+# Note: This only verifies the build compiles - it does not run tests or sign the app.
+# The app is built for the tvOS Simulator (no code signing required).
+
+name: tvOS Build
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'tvos/**'
+      - '.github/workflows/tvos-build.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'tvos/**'
+      - '.github/workflows/tvos-build.yml'
+
+jobs:
+  build:
+    runs-on: macos-14
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode version
+      run: |
+        # Use the latest stable Xcode available on the runner
+        sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+        xcodebuild -version
+    
+    - name: Show available simulators
+      run: |
+        xcrun simctl list devices available | grep -i "apple tv" | head -5
+    
+    - name: Build tvOS app
+      run: |
+        cd tvos
+        xcodebuild build \
+          -project VibeScapeTV.xcodeproj \
+          -scheme VibeScapeTV \
+          -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
+          -configuration Debug \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          | xcpretty --color || true
+        
+        # Check the actual build result
+        xcodebuild build \
+          -project VibeScapeTV.xcodeproj \
+          -scheme VibeScapeTV \
+          -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
+          -configuration Debug \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO

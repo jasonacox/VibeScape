@@ -15,8 +15,16 @@ name: Backend Tests
 on:
   push:
     branches: [ main, develop ]
+    paths-ignore:
+      - 'tvos/**'
+      - '.github/workflows/tvos-build.yml'
+      - '**.md'
   pull_request:
     branches: [ main, develop ]
+    paths-ignore:
+      - 'tvos/**'
+      - '.github/workflows/tvos-build.yml'
+      - '**.md'
 
 jobs:
   test:

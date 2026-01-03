@@ -1,6 +1,7 @@
 # VibeScape
 
 [![Backend Tests](https://github.com/jasonacox/VibeScape/actions/workflows/backend-tests.yml/badge.svg)](https://github.com/jasonacox/VibeScape/actions/workflows/backend-tests.yml)
+[![tvOS Build](https://github.com/jasonacox/VibeScape/actions/workflows/tvos-build.yml/badge.svg)](https://github.com/jasonacox/VibeScape/actions/workflows/tvos-build.yml)
 
 ## AI Powered Seasonal Dreams
 
