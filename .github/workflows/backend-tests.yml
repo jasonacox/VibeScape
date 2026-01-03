@@ -1,0 +1,66 @@
+# VibeScape Backend Server Tests
+#
+# Tests the Python FastAPI backend server that generates seasonal AI images.
+# This includes:
+#   - Seasonal blending logic and date interpolation
+#   - All 11 season prompt generators (Christmas, Winter, Summer, etc.)
+#   - Icon generation utilities
+#   - FastAPI endpoints (health, image, stats, etc.)
+#   - Session management and caching
+#
+# Target coverage: 75%+ overall (325+ tests)
+
+name: Backend Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      # Test against multiple Python versions for compatibility
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'  # Cache pip dependencies for faster runs
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run tests with coverage
+      run: |
+        # Run pytest with coverage reporting
+        # Expected: 325+ tests, 75%+ coverage
+        pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
+    
+    - name: Upload coverage to Codecov
+      # Only upload once (from Python 3.10) to avoid duplicates
+      if: matrix.python-version == '3.10'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+    
+    - name: Archive coverage report
+      # Save HTML coverage report as downloadable artifact
+      if: matrix.python-version == '3.10'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: htmlcov/
