@@ -1,6 +1,16 @@
 # VibeScape Release Notes
 
 
+## Version 1.0.7 (2026-01-02)
+
+### Image Display Improvements
+- **Full-Screen Coverage**: Both web client and tvOS app now fill the entire screen without black bars while maintaining image aspect ratio
+  - Web client: Changed CSS `object-fit` from `contain` to `cover` for edge-to-edge display
+  - tvOS app: Changed SwiftUI `aspectRatio` from `.fit` to `.fill` with `.clipped()` modifier
+  - Images now scale uniformly (maintaining x/y ratio) to completely cover viewport, cropping overflow rather than letterboxing/pillarboxing
+
+---
+
 ## Version 1.0.6 (2026-01-02)
 
 ### Bug Fixes

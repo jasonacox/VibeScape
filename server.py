@@ -122,7 +122,7 @@ IMAGE_TIMEOUT = int(os.environ.get("IMAGE_TIMEOUT", 300))
 IMAGE_PROVIDER = os.environ.get("IMAGE_PROVIDER", "swarmui").lower()
 
 # Server version
-VERSION = "1.0.6"
+VERSION = "1.0.7"
 
 # OpenAI image settings
 OPENAI_IMAGE_API_KEY = os.environ.get("OPENAI_IMAGE_API_KEY", "")
