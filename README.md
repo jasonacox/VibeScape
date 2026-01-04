@@ -7,7 +7,7 @@
 
 An always-on ambient generative art experience that creates seasonal imagery to match the time of year. VibeScape automatically generates beautiful, themed scenes that evolve throughout the year — from cozy winter landscapes and festive holiday celebrations to vibrant spring gardens and warm summer sunsets.
 
-<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/f4f3d637-e569-42bb-aa47-c923247ce32e" style="width:400px;height:400px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);" />
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/5acd6baf-164b-4121-a7cf-eee2f0c2f760" />
 
 ## Features
 
