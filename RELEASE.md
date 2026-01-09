@@ -1,6 +1,29 @@
 # VibeScape Release Notes
 
 
+## Version 1.0.9 (2026-01-08)
+
+### Bug Fixes
+- **Peak Viewer Count Tracking**: Fixed `MAX_CONNECTED_VIEWERS` not updating when sessions are tracked via `/image` endpoint
+  - Previously only `/connect` endpoint updated the peak viewer count
+  - Clients calling `/image` directly would increase current viewers but peak would remain stale
+  - Now both `/image` and `/connect` endpoints properly track and update peak viewer statistics
+
+### Prompt Improvements
+- **No Signature Directive**: Added "no signature, no text" instructions to alternate artistic styles
+  - Prevents AI models from hallucinating an artist signature or text overlays on illustrated/painted style images
+  - Applies to all 4 alternate styles: watercolor, vintage postcard, oil painting, and children's book illustration
+  - Ensures clean, signature-free images in the 20% of generations that use alternate artistic styles
+
+### Content Enhancements
+- **Rainy Season Content**: Significantly expanded Spring season with comprehensive rain-themed scenes and atmosphere
+  - Added 15 new rain-focused scene keywords: rain on flowers, puddle reflections, cozy rainy interiors, spring storms, misty mornings
+  - Added 10 new rain-related extras: gentle rain, water droplets, misty atmosphere, reflections, glistening wetness, storm clouds, rainbows, petrichor
+  - Spring season (March-May) now authentically captures the rainy season with "April showers" aesthetic
+  - Rain scenes naturally blend with blooming flowers and renewal themes for complete seasonal experience
+
+---
+
 ## Version 1.0.8 (2026-01-03)
 
 ### Image Quality Improvements

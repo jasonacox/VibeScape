@@ -122,7 +122,7 @@ IMAGE_TIMEOUT = int(os.environ.get("IMAGE_TIMEOUT", 300))
 IMAGE_PROVIDER = os.environ.get("IMAGE_PROVIDER", "swarmui").lower()
 
 # Server version
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 
 # OpenAI image settings
 OPENAI_IMAGE_API_KEY = os.environ.get("OPENAI_IMAGE_API_KEY", "")
@@ -890,7 +890,7 @@ async def index(request: Request, refresh: int | None = None):
 async def image_endpoint(request: Request):
     """Generate and return a new seasonal scene as JSON with a `image_data` data URI."""
     # Declare globals at the top
-    global CONNECTED_VIEWERS, LAST_ACTIVITY, LAST_IMAGE, LAST_IMAGE_TIME, GENERATION_IN_PROGRESS
+    global CONNECTED_VIEWERS, MAX_CONNECTED_VIEWERS, LAST_ACTIVITY, LAST_IMAGE, LAST_IMAGE_TIME, GENERATION_IN_PROGRESS
     global IMAGES_GENERATED, GEN_TIME_COUNT, GEN_TIME_SUM, GEN_TIME_MIN, GEN_TIME_MAX
     
     # Register/refresh session for this image request
@@ -914,6 +914,8 @@ async def image_endpoint(request: Request):
             logger.warning("Session limit reached, evicted oldest session: %s", oldest_id[:8])
         session_count = len(SESSIONS)
         CONNECTED_VIEWERS = session_count
+        if CONNECTED_VIEWERS > MAX_CONNECTED_VIEWERS:
+            MAX_CONNECTED_VIEWERS = CONNECTED_VIEWERS
         LAST_ACTIVITY = now
 
     # Check cache and generation status

@@ -24,10 +24,10 @@ class SeasonBase(ABC):
     
     # Alternative styles for variety (20% chance)
     ALTERNATE_STYLES = [
-        "Whimsical, storybook illustration, watercolor, soft palette, hand-painted",
-        "Vintage postcard, warm tones, slight film grain, nostalgic",
-        "Painterly, oil painting, soft brush strokes, cozy mood",
-        "Children's book illustration, flat colors, high charm",
+        "Whimsical, storybook illustration, watercolor, soft palette, hand-painted, no signature, no text",
+        "Vintage postcard, warm tones, slight film grain, nostalgic, no signature, no text",
+        "Painterly, oil painting, soft brush strokes, cozy mood, no signature, no text",
+        "Children's book illustration, flat colors, high charm, no signature, no text",
     ]
     
     @property
