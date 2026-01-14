@@ -122,7 +122,7 @@ IMAGE_TIMEOUT = int(os.environ.get("IMAGE_TIMEOUT", 300))
 IMAGE_PROVIDER = os.environ.get("IMAGE_PROVIDER", "swarmui").lower()
 
 # Server version
-VERSION = "1.0.9"
+VERSION = "1.0.10"
 
 # OpenAI image settings
 OPENAI_IMAGE_API_KEY = os.environ.get("OPENAI_IMAGE_API_KEY", "")
@@ -172,6 +172,7 @@ FAVICON_ICO_BYTES: bytes | None = None
 # Stats (generation metrics)
 IMAGES_GENERATED = 0
 IMAGES_FAILED = 0
+CONSECUTIVE_FAILURES = 0
 STATS_LOCK = threading.Lock()
 # Generation time stats (seconds)
 GEN_TIME_COUNT = 0
@@ -323,7 +324,7 @@ async def _background_generate(source: str = "request"):
         source: Description of what triggered the generation (for logging)
     """
     global LAST_IMAGE, LAST_IMAGE_TIME, GENERATION_IN_PROGRESS
-    global IMAGES_GENERATED, IMAGES_FAILED, GEN_TIME_COUNT, GEN_TIME_SUM, GEN_TIME_MIN, GEN_TIME_MAX
+    global IMAGES_GENERATED, IMAGES_FAILED, CONSECUTIVE_FAILURES, GEN_TIME_COUNT, GEN_TIME_SUM, GEN_TIME_MIN, GEN_TIME_MAX
     
     # Note: GENERATION_IN_PROGRESS should already be True (set by caller)
     
@@ -337,6 +338,7 @@ async def _background_generate(source: str = "request"):
             try:
                 with STATS_LOCK:
                     IMAGES_GENERATED += 1
+                    CONSECUTIVE_FAILURES = 0  # Reset on success
                     GEN_TIME_COUNT += 1
                     GEN_TIME_SUM += elapsed
                     if GEN_TIME_MIN is None or elapsed < GEN_TIME_MIN:
@@ -354,6 +356,7 @@ async def _background_generate(source: str = "request"):
             try:
                 with STATS_LOCK:
                     IMAGES_FAILED += 1
+                    CONSECUTIVE_FAILURES += 1
             except Exception:
                 logger.exception("Failed to update failure stats")
             logger.error("Background generation failed: %s", result.get("error"))
@@ -361,6 +364,7 @@ async def _background_generate(source: str = "request"):
         try:
             with STATS_LOCK:
                 IMAGES_FAILED += 1
+                CONSECUTIVE_FAILURES += 1
         except Exception:
             pass
         logger.exception("Background generation exception")
@@ -1015,6 +1019,7 @@ async def stats():
         peak = MAX_CONNECTED_VIEWERS
         count = IMAGES_GENERATED
         failed = IMAGES_FAILED
+        consecutive_failed = CONSECUTIVE_FAILURES
         gen_count = GEN_TIME_COUNT
         gen_sum = GEN_TIME_SUM
         gen_min = GEN_TIME_MIN
@@ -1037,6 +1042,7 @@ async def stats():
             "peak_connected": peak,
             "images_generated": count,
             "images_failed": failed,
+            "consecutive_failures": consecutive_failed,
             "generation_time_min_s": gen_min,
             "generation_time_max_s": gen_max,
             "generation_time_avg_s": avg,
