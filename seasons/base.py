@@ -16,17 +16,18 @@ class SeasonBase(ABC):
     - get_prompt() - Generate a random prompt for this season
     """
 
-    # Default style prefix (can be overridden by subclasses)
-    STYLE_PREFIX = (
-        "Ultra-detailed, cinematic, photorealistic, 8k, dramatic lighting, "
-        "warm color grading, high dynamic range, shallow depth of field"
-        "Photorealistic, ultra-detailed, 8k, cinematic composition, "
-        "professional photography, natural lighting, crisp focus, "
-        "high dynamic range, rich textures, authentic atmosphere, "
-        "realistic depth of field, magazine quality"
-    )
+    # Photorealistic style variations - randomly selected for variety
+    PHOTOREALISTIC_STYLES = [
+        "Ultra-detailed, cinematic, photorealistic, 8k, dramatic lighting, warm color grading, high dynamic range, shallow depth of field",
+        "Professional photography, high quality, photorealistic, crisp focus, 8k resolution, natural lighting, shallow depth of field",
+        "Award-winning photography, ultra-detailed, photorealistic, magazine quality, perfect composition, rich colors, dramatic lighting",
+        "DSLR photo, professional, photorealistic, 8k, sharp focus, beautiful lighting, high dynamic range, cinematic quality",
+        "High-end photography, photorealistic, ultra-detailed, natural lighting, 8k resolution, perfect exposure, stunning composition",
+        "Photorealistic masterpiece, ultra-detailed, 8k, cinematic lighting, professional photography, shallow depth of field, vivid colors",
+        "Professional photo shoot, photorealistic, high quality, natural lighting, 8k, sharp details, beautiful composition, rich textures",
+    ]
 
-    # Alternative styles for variety (20% chance for artistic variation)
+    # Alternative artistic styles for variety (20% chance for artistic variation)
     ALTERNATE_STYLES = [
         "Whimsical, storybook illustration, watercolor, soft palette, hand-painted, no signature, no text",
         "Vintage postcard, warm tones, slight film grain, nostalgic, no signature, no text",
@@ -135,10 +136,11 @@ class SeasonBase(ABC):
         num_extras = min(num_extras, len(self.extras))
         take = random.sample(self.extras, k=num_extras)
 
-        # 20% chance to use an alternate artistic style (80% photorealistic)
-        style_prefix = self.STYLE_PREFIX
+        # 20% chance to use an alternate artistic style, 80% photorealistic with variation
         if random.random() < 0.2:
             style_prefix = random.choice(self.ALTERNATE_STYLES)
+        else:
+            style_prefix = random.choice(self.PHOTOREALISTIC_STYLES)
 
         # Build prompt components list
         components = [style_prefix, scene]
