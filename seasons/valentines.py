@@ -5,11 +5,11 @@ from .base import SeasonBase
 
 class Valentines(SeasonBase):
     """Valentine's Day theme generator - hearts, romance, and love."""
-    
+
     @property
     def name(self) -> str:
         return "valentines"
-    
+
     @property
     def scene_keywords(self) -> list[str]:
         return [
@@ -39,7 +39,7 @@ class Valentines(SeasonBase):
             "couple sharing umbrella in gentle rain",
             "heart confetti celebration",
         ]
-    
+
     @property
     def extras(self) -> list[str]:
         return [
@@ -59,4 +59,29 @@ class Valentines(SeasonBase):
             "sweet romance",
             "loving embrace",
             "soft bokeh lights",
+        ]
+
+    @property
+    def scene_objects(self) -> list[str]:
+        return [
+            "bouquet of red roses",
+            "heart-shaped box of chocolates",
+            "champagne bottle",
+            "love letter",
+            "romantic candle",
+            "teddy bear",
+            "heart-shaped pillow",
+            "red wine glasses",
+            "jewelry box",
+            "valentine card",
+            "silk ribbon",
+            "rose petals",
+            "heart balloons",
+            "photo frame",
+            "gift box with bow",
+            "perfume bottle",
+            "couples' coffee mugs",
+            "string of lights",
+            "velvet cushion",
+            "romantic book",
         ]

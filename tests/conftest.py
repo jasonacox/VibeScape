@@ -24,11 +24,26 @@ if ROOT not in sys.path:
 def clean_env(monkeypatch):
     """Clean environment for testing - removes all VibeScape env vars."""
     env_vars = [
-        "PORT", "SWARMUI", "IMAGE_MODEL", "IMAGE_CFGSCALE", "IMAGE_STEPS",
-        "IMAGE_WIDTH", "IMAGE_HEIGHT", "IMAGE_SEED", "IMAGE_TIMEOUT",
-        "IMAGE_PROVIDER", "OPENAI_IMAGE_API_KEY", "OPENAI_IMAGE_API_BASE",
-        "OPENAI_IMAGE_MODEL", "OPENAI_IMAGE_SIZE", "REFRESH_SECONDS",
-        "POLL_INTERVAL", "DATE", "ENABLE_DOCS", "TIMEZONE", "DEBUG"
+        "PORT",
+        "SWARMUI",
+        "IMAGE_MODEL",
+        "IMAGE_CFGSCALE",
+        "IMAGE_STEPS",
+        "IMAGE_WIDTH",
+        "IMAGE_HEIGHT",
+        "IMAGE_SEED",
+        "IMAGE_TIMEOUT",
+        "IMAGE_PROVIDER",
+        "OPENAI_IMAGE_API_KEY",
+        "OPENAI_IMAGE_API_BASE",
+        "OPENAI_IMAGE_MODEL",
+        "OPENAI_IMAGE_SIZE",
+        "REFRESH_SECONDS",
+        "POLL_INTERVAL",
+        "DATE",
+        "ENABLE_DOCS",
+        "TIMEZONE",
+        "DEBUG",
     ]
     for var in env_vars:
         monkeypatch.delenv(var, raising=False)
@@ -102,12 +117,12 @@ def temp_static_dir(tmp_path, sample_png_bytes):
     """Create a temporary static directory with test icons."""
     static_dir = tmp_path / "static"
     static_dir.mkdir()
-    
+
     # Create sample icon files
     (static_dir / "apple-touch-icon.png").write_bytes(sample_png_bytes)
     (static_dir / "favicon-32x32.png").write_bytes(sample_png_bytes)
     (static_dir / "favicon.ico").write_bytes(sample_png_bytes)
-    
+
     return static_dir
 
 
@@ -116,20 +131,14 @@ def mock_swarmui_response(sample_base64_image):
     """Mock SwarmUI API response structure."""
     return {
         "session_id": "test-session-123",
-        "images": [f"data:image/jpeg;base64,{sample_base64_image}"]
+        "images": [f"data:image/jpeg;base64,{sample_base64_image}"],
     }
 
 
 @pytest.fixture
 def mock_openai_response(sample_base64_image):
     """Mock OpenAI API response structure."""
-    return {
-        "data": [
-            {
-                "b64_json": sample_base64_image
-            }
-        ]
-    }
+    return {"data": [{"b64_json": sample_base64_image}]}
 
 
 @pytest.fixture
@@ -164,6 +173,7 @@ def frozen_new_years_date():
 def season_blender():
     """Create a SeasonBlender instance for testing."""
     from blender import SeasonBlender
+
     return SeasonBlender()
 
 
@@ -181,21 +191,23 @@ def mock_aiohttp_response(sample_base64_image):
     """Mock aiohttp response object."""
     mock_resp = AsyncMock()
     mock_resp.status = 200
-    mock_resp.json = AsyncMock(return_value={
-        "session_id": "test-session-123",
-        "images": [f"data:image/jpeg;base64,{sample_base64_image}"]
-    })
+    mock_resp.json = AsyncMock(
+        return_value={
+            "session_id": "test-session-123",
+            "images": [f"data:image/jpeg;base64,{sample_base64_image}"],
+        }
+    )
     return mock_resp
 
 
 @pytest.fixture(autouse=False)
 def reset_server_globals():
     """Reset server global variables between tests.
-    
+
     Use this fixture explicitly in tests that modify server state.
     """
     import server
-    
+
     # Save original values
     original_sessions = server.SESSIONS.copy()
     original_viewers = server.CONNECTED_VIEWERS
@@ -206,9 +218,9 @@ def reset_server_globals():
     original_generation_in_progress = server.GENERATION_IN_PROGRESS
     original_images_generated = server.IMAGES_GENERATED
     original_images_failed = server.IMAGES_FAILED
-    
+
     yield
-    
+
     # Restore original values
     server.SESSIONS.clear()
     server.SESSIONS.update(original_sessions)
@@ -227,6 +239,6 @@ def test_client(reset_server_globals):
     """Create a FastAPI TestClient for testing endpoints."""
     import server
     from fastapi.testclient import TestClient
-    
+
     client = TestClient(server.app)
     return client

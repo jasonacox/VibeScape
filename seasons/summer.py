@@ -10,15 +10,15 @@ from .base import SeasonBase
 class Summer(SeasonBase):
     """
     Summer season prompt generator.
-    
+
     Creates vibrant summer scenes featuring beaches, outdoor adventures,
     vacation moments, and the bright energy of warm summer days.
     """
-    
+
     @property
     def name(self) -> str:
         return "Summer"
-    
+
     @property
     def scene_keywords(self) -> list[str]:
         return [
@@ -53,7 +53,7 @@ class Summer(SeasonBase):
             "summer carnival with lights",
             "fishing pier at golden hour",
         ]
-    
+
     @property
     def extras(self) -> list[str]:
         return [
@@ -73,4 +73,29 @@ class Summer(SeasonBase):
             "summer warmth",
             "joyful moments",
             "soft bokeh lights",
+        ]
+
+    @property
+    def scene_objects(self) -> list[str]:
+        return [
+            "beach ball",
+            "surfboard",
+            "cooler",
+            "beach umbrella",
+            "hammock",
+            "sunglasses",
+            "flip-flops",
+            "kayak",
+            "beach towel",
+            "watermelon slice",
+            "seashells",
+            "sand bucket",
+            "inflatable float",
+            "picnic basket",
+            "camping tent",
+            "guitar",
+            "bicycle",
+            "skateboard",
+            "fishing rod",
+            "beach chair",
         ]

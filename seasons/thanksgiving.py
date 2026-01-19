@@ -10,15 +10,15 @@ from .base import SeasonBase
 class Thanksgiving(SeasonBase):
     """
     Thanksgiving season prompt generator.
-    
+
     Creates warm family gathering scenes, traditional feasts,
     harvest celebrations, and gratitude-themed imagery.
     """
-    
+
     @property
     def name(self) -> str:
         return "Thanksgiving"
-    
+
     @property
     def scene_keywords(self) -> list[str]:
         return [
@@ -38,28 +38,24 @@ class Thanksgiving(SeasonBase):
             "detailed view of brussels sprouts with bacon bits",
             "overhead shot of mac and cheese with golden crusty top",
             "close-up of corn on the cob with melting butter",
-            
             # Table setting close-ups
             "close-up of elegant Thanksgiving place setting with autumn napkins",
             "tight shot of wine glasses and candles on Thanksgiving table",
             "overhead view of full Thanksgiving table spread, all dishes visible",
             "close-up of centerpiece with mini pumpkins and fall flowers",
             "detailed shot of autumn-themed table runner with place cards",
-            
             # Traditional feast scenes
             "family gathered around Thanksgiving dinner table, feast spread",
             "golden roasted turkey centerpiece on dining table with sides",
             "traditional Thanksgiving feast with all the trimmings displayed",
             "Thanksgiving table setting with autumn decorations everywhere",
             "rustic farmhouse Thanksgiving celebration with harvest theme",
-            
             # Cooking and preparation
             "kitchen counter with Thanksgiving meal prep in progress",
             "hands carving turkey on serving platter, steam rising",
             "family cooking together in warm kitchen, multiple dishes",
             "warm kitchen with homemade pies cooling on counter",
             "oven view of turkey roasting, golden brown",
-            
             # Family gathering moments
             "multi-generational family giving thanks before meal",
             "family sharing gratitude around candlelit table",
@@ -67,13 +63,12 @@ class Thanksgiving(SeasonBase):
             "children helping set Thanksgiving table",
             "cozy dining room filled with family and food",
             "warm gathering with friends and family, laughter and food",
-            
             # Harvest and decoration
             "cornucopia overflowing with harvest bounty and gourds",
             "autumn harvest display with pumpkins and wheat sheaves",
             "autumn-themed centerpiece with candles and fall leaves",
         ]
-    
+
     @property
     def extras(self) -> list[str]:
         return [
@@ -97,4 +92,29 @@ class Thanksgiving(SeasonBase):
             "overhead food photography",
             "garnished beautifully",
             "rich textures and details",
+        ]
+
+    @property
+    def scene_objects(self) -> list[str]:
+        return [
+            "roasted turkey",
+            "pumpkin pie",
+            "cornucopia",
+            "gravy boat",
+            "wooden serving platter",
+            "woven basket",
+            "autumn wreath",
+            "candle holder",
+            "copper pot",
+            "rustic pitcher",
+            "harvest gourd",
+            "wheat sheaf",
+            "wooden bowl",
+            "cast iron skillet",
+            "linen napkins",
+            "cider jug",
+            "pie dish",
+            "ceramic platter",
+            "farmhouse table",
+            "rocking chair",
         ]

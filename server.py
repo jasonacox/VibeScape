@@ -115,18 +115,20 @@ if SWARMUI and not SWARMUI.startswith("http://") and not SWARMUI.startswith("htt
 IMAGE_MODEL = os.environ.get("IMAGE_MODEL", "Flux/flux1-schnell-fp8")
 IMAGE_CFGSCALE = float(os.environ.get("IMAGE_CFGSCALE", 1.0))
 IMAGE_STEPS = int(os.environ.get("IMAGE_STEPS", 6))
-IMAGE_WIDTH = int(os.environ.get("IMAGE_WIDTH", 1280)) # 1024
-IMAGE_HEIGHT = int(os.environ.get("IMAGE_HEIGHT", 720)) # 1024
+IMAGE_WIDTH = int(os.environ.get("IMAGE_WIDTH", 1280))  # 1024
+IMAGE_HEIGHT = int(os.environ.get("IMAGE_HEIGHT", 720))  # 1024
 IMAGE_SEED = int(os.environ.get("IMAGE_SEED", -1))
 IMAGE_TIMEOUT = int(os.environ.get("IMAGE_TIMEOUT", 300))
 IMAGE_PROVIDER = os.environ.get("IMAGE_PROVIDER", "swarmui").lower()
 
 # Server version
-VERSION = "1.0.10"
+VERSION = "1.0.11"
 
 # OpenAI image settings
 OPENAI_IMAGE_API_KEY = os.environ.get("OPENAI_IMAGE_API_KEY", "")
-OPENAI_IMAGE_API_BASE = os.environ.get("OPENAI_IMAGE_API_BASE", "https://api.openai.com/v1")
+OPENAI_IMAGE_API_BASE = os.environ.get(
+    "OPENAI_IMAGE_API_BASE", "https://api.openai.com/v1"
+)
 OPENAI_IMAGE_MODEL = os.environ.get("OPENAI_IMAGE_MODEL", "dall-e-3")
 OPENAI_IMAGE_SIZE = os.environ.get("OPENAI_IMAGE_SIZE", "1024x1024")
 
@@ -181,7 +183,11 @@ GEN_TIME_MIN: float | None = None
 GEN_TIME_MAX: float | None = None
 
 # Logging
-LOG_LEVEL = logging.DEBUG if os.environ.get("DEBUG", "").lower() in ("true", "1", "yes") else logging.INFO
+LOG_LEVEL = (
+    logging.DEBUG
+    if os.environ.get("DEBUG", "").lower() in ("true", "1", "yes")
+    else logging.INFO
+)
 logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("vibescape_server")
 logger.info("Starting VibeScape server - version %s", VERSION)
@@ -205,7 +211,10 @@ try:
         # Do not log secret values — only indicate presence
         "OPENAI_IMAGE_API_KEY": ("SET" if OPENAI_IMAGE_API_KEY else "NOT SET"),
     }
-    logger.info("Effective configuration:\n%s", "\n".join(f"{k}: {v}" for k, v in config.items()))
+    logger.info(
+        "Effective configuration:\n%s",
+        "\n".join(f"{k}: {v}" for k, v in config.items()),
+    )
 except Exception:
     logger.exception("Failed to log configuration")
 
@@ -214,7 +223,7 @@ def _make_landscape_icon(size: int) -> Image.Image:
     """Create a simple landscape icon representing VibeScape (fallback if static files missing)."""
     im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(im)
-    
+
     # Sky gradient (upper 60%)
     sky_height = int(size * 0.6)
     for y in range(sky_height):
@@ -223,21 +232,38 @@ def _make_landscape_icon(size: int) -> Image.Image:
         g = int(206 + (130 - 206) * ratio)
         b = int(235 + (180 - 235) * ratio)
         draw.line([(0, y), (size, y)], fill=(r, g, b, 255))
-    
+
     # Ground (lower 40%)
     draw.rectangle((0, sky_height, size, size), fill=(76, 187, 23, 255))
-    
+
     # Sun in top right
     sun_r = int(size * 0.12)
     sun_x = int(size * 0.75)
     sun_y = int(size * 0.25)
-    draw.ellipse((sun_x - sun_r, sun_y - sun_r, sun_x + sun_r, sun_y + sun_r), fill=(255, 220, 100, 255))
-    
+    draw.ellipse(
+        (sun_x - sun_r, sun_y - sun_r, sun_x + sun_r, sun_y + sun_r),
+        fill=(255, 220, 100, 255),
+    )
+
     # Mountains
     mountain_color = (100, 100, 120, 255)
-    draw.polygon([(0, sky_height), (int(size * 0.35), int(size * 0.35)), (int(size * 0.55), sky_height)], fill=mountain_color)
-    draw.polygon([(int(size * 0.45), sky_height), (int(size * 0.70), int(size * 0.25)), (size, sky_height)], fill=mountain_color)
-    
+    draw.polygon(
+        [
+            (0, sky_height),
+            (int(size * 0.35), int(size * 0.35)),
+            (int(size * 0.55), sky_height),
+        ],
+        fill=mountain_color,
+    )
+    draw.polygon(
+        [
+            (int(size * 0.45), sky_height),
+            (int(size * 0.70), int(size * 0.25)),
+            (size, sky_height),
+        ],
+        fill=mountain_color,
+    )
+
     return im
 
 
@@ -248,92 +274,98 @@ def _png_bytes_from_image(img: Image.Image) -> bytes:
     return buf.getvalue()
 
 
-def _remove_letterbox(image: Image.Image, threshold: int = 15, min_bar_height: int = 10) -> Image.Image:
+def _remove_letterbox(
+    image: Image.Image, threshold: int = 15, min_bar_height: int = 10
+) -> Image.Image:
     """
     Detect and remove letterbox bars (black bars on top/bottom) from an image.
-    
+
     Algorithm:
     1. Check rows from top and bottom
     2. A row is considered "letterbox" if its average brightness is below threshold
        AND it has low variance (uniform darkness across width)
     3. Stop when we hit a row with sufficient brightness or variance
     4. Only crop if bars are at least min_bar_height pixels
-    
+
     Args:
         image: PIL Image to process
         threshold: Maximum average brightness (0-255) to consider a row as letterbox
         min_bar_height: Minimum height of letterbox bar to trigger cropping
-    
+
     Returns:
         Cropped image or original if no letterbox detected
     """
     if image.mode != "RGB":
         image = image.convert("RGB")
-    
+
     width, height = image.size
     pixels = image.load()
-    
+
     def is_letterbox_row(y: int) -> bool:
         """Check if a row appears to be a letterbox bar."""
         # Sample brightness values across the row
         samples = []
         sample_step = max(1, width // 20)  # Sample ~20 points across width
-        
+
         for x in range(0, width, sample_step):
             r, g, b = pixels[x, y]
             brightness = (r + g + b) / 3
             samples.append(brightness)
-        
+
         avg_brightness = sum(samples) / len(samples)
-        
+
         # Calculate variance to detect uniform darkness
         variance = sum((s - avg_brightness) ** 2 for s in samples) / len(samples)
-        
+
         # Row is letterbox if dark AND uniform
         return avg_brightness < threshold and variance < 100
-    
+
     # Find top letterbox boundary
     top_crop = 0
     for y in range(height // 10):  # Only check top 10%
         if not is_letterbox_row(y):
             break
         top_crop = y + 1
-    
+
     # Find bottom letterbox boundary
     bottom_crop = height
     for y in range(height - 1, height - height // 10, -1):  # Only check bottom 10%
         if not is_letterbox_row(y):
             break
         bottom_crop = y
-    
+
     # Only crop if we found significant letterbox bars
     if top_crop >= min_bar_height or (height - bottom_crop) >= min_bar_height:
-        logger.info("Detected letterbox bars: top=%d, bottom=%d pixels", top_crop, height - bottom_crop)
+        logger.info(
+            "Detected letterbox bars: top=%d, bottom=%d pixels",
+            top_crop,
+            height - bottom_crop,
+        )
         return image.crop((0, top_crop, width, bottom_crop))
-    
+
     return image
 
 
 async def _background_generate(source: str = "request"):
     """Shared background generation task. Updates cache and stats.
-    
+
     IMPORTANT: Caller must set GENERATION_IN_PROGRESS = True before creating this task
     to avoid race conditions. This function clears the flag in its finally block.
-    
+
     Args:
         source: Description of what triggered the generation (for logging)
     """
     global LAST_IMAGE, LAST_IMAGE_TIME, GENERATION_IN_PROGRESS
     global IMAGES_GENERATED, IMAGES_FAILED, CONSECUTIVE_FAILURES, GEN_TIME_COUNT, GEN_TIME_SUM, GEN_TIME_MIN, GEN_TIME_MAX
-    
+
     # Note: GENERATION_IN_PROGRESS should already be True (set by caller)
-    
+
     try:
         loop = asyncio.get_running_loop()
         t0 = loop.time()
         result = await generate_scene()
         elapsed = loop.time() - t0
-        
+
         if "error" not in result:
             try:
                 with STATS_LOCK:
@@ -347,11 +379,13 @@ async def _background_generate(source: str = "request"):
                         GEN_TIME_MAX = elapsed
             except Exception:
                 logger.exception("Failed to update generation stats")
-            
+
             with IMAGE_CACHE_LOCK:
                 LAST_IMAGE = result
                 LAST_IMAGE_TIME = time.time()
-            logger.info("Background generation completed successfully (source: %s)", source)
+            logger.info(
+                "Background generation completed successfully (source: %s)", source
+            )
         else:
             try:
                 with STATS_LOCK:
@@ -373,26 +407,34 @@ async def _background_generate(source: str = "request"):
             GENERATION_IN_PROGRESS = False
 
 
-def _maybe_trigger_generation(cached_result, last_time: float, generation_in_progress: bool, source: str = "request") -> bool:
+def _maybe_trigger_generation(
+    cached_result,
+    last_time: float,
+    generation_in_progress: bool,
+    source: str = "request",
+) -> bool:
     """Check if generation should be triggered, and start it if needed.
-    
+
     Sets GENERATION_IN_PROGRESS atomically before creating the task to prevent race conditions.
-    
+
     Returns True if generation was started.
     """
     global GENERATION_IN_PROGRESS
     now = time.time()
     should_generate = False
-    
+
     if not cached_result:
         should_generate = True
     elif last_time:
         elapsed_since_last = now - last_time
         if elapsed_since_last >= DEFAULT_REFRESH:
             should_generate = True
-            logger.debug("Cache expired (%.1fs since last generation, TTL=%ds) — triggering background generation", 
-                       elapsed_since_last, DEFAULT_REFRESH)
-    
+            logger.debug(
+                "Cache expired (%.1fs since last generation, TTL=%ds) — triggering background generation",
+                elapsed_since_last,
+                DEFAULT_REFRESH,
+            )
+
     if should_generate and not generation_in_progress:
         # Set flag BEFORE creating task to prevent race conditions
         with IMAGE_CACHE_LOCK:
@@ -409,8 +451,10 @@ def _maybe_trigger_generation(cached_result, last_time: float, generation_in_pro
 @asynccontextmanager
 async def _lifespan(app):
     global GENERATION_IN_PROGRESS
-    logger.info("Application startup — generating cached assets and ready to serve requests.")
-    
+    logger.info(
+        "Application startup — generating cached assets and ready to serve requests."
+    )
+
     # Background task to clean up stale sessions
     async def _cleanup_sessions():
         while True:
@@ -418,18 +462,26 @@ async def _lifespan(app):
                 await asyncio.sleep(SESSION_CLEANUP_INTERVAL)
                 now = time.time()
                 with SESSION_STATE_LOCK:
-                    stale = [sid for sid, last_seen in SESSIONS.items() if now - last_seen > SESSION_TTL]
+                    stale = [
+                        sid
+                        for sid, last_seen in SESSIONS.items()
+                        if now - last_seen > SESSION_TTL
+                    ]
                     for sid in stale:
                         del SESSIONS[sid]
                     if stale:
-                        logger.info("Cleaned up %d stale sessions (TTL=%ds)", len(stale), SESSION_TTL)
+                        logger.info(
+                            "Cleaned up %d stale sessions (TTL=%ds)",
+                            len(stale),
+                            SESSION_TTL,
+                        )
             except asyncio.CancelledError:
                 break
             except Exception:
                 logger.exception("Error in session cleanup task")
-    
+
     cleanup_task = asyncio.create_task(_cleanup_sessions())
-    
+
     # Load cached icons from static directory (or generate fallback)
     try:
         global APPLE_TOUCH_BYTES, FAVICON_32_BYTES, FAVICON_ICO_BYTES
@@ -438,23 +490,31 @@ async def _lifespan(app):
             apple_path = os.path.join(STATIC_DIR, "apple-touch-icon.png")
             fav32_path = os.path.join(STATIC_DIR, "favicon-32x32.png")
             ico_path = os.path.join(STATIC_DIR, "favicon.ico")
-            
+
             if os.path.exists(apple_path):
                 with open(apple_path, "rb") as f:
                     APPLE_TOUCH_BYTES = f.read()
                 logger.debug("Loaded apple-touch-icon.png from static/")
             else:
-                logger.warning("static/apple-touch-icon.png not found, generating fallback")
-                APPLE_TOUCH_BYTES = _png_bytes_from_image(_make_landscape_icon(ICON_SIZE_LARGE))
-            
+                logger.warning(
+                    "static/apple-touch-icon.png not found, generating fallback"
+                )
+                APPLE_TOUCH_BYTES = _png_bytes_from_image(
+                    _make_landscape_icon(ICON_SIZE_LARGE)
+                )
+
             if os.path.exists(fav32_path):
                 with open(fav32_path, "rb") as f:
                     FAVICON_32_BYTES = f.read()
                 logger.debug("Loaded favicon-32x32.png from static/")
             else:
-                logger.warning("static/favicon-32x32.png not found, generating fallback")
-                FAVICON_32_BYTES = _png_bytes_from_image(_make_landscape_icon(ICON_SIZE_SMALL))
-            
+                logger.warning(
+                    "static/favicon-32x32.png not found, generating fallback"
+                )
+                FAVICON_32_BYTES = _png_bytes_from_image(
+                    _make_landscape_icon(ICON_SIZE_SMALL)
+                )
+
             if os.path.exists(ico_path):
                 with open(ico_path, "rb") as f:
                     FAVICON_ICO_BYTES = f.read()
@@ -469,14 +529,14 @@ async def _lifespan(app):
                 FAVICON_ICO_BYTES = buf.getvalue()
     except Exception:
         logger.exception("Failed to load icons from static/")
-    
+
     # Generate initial image in background (don't block server startup)
     # Set flag BEFORE creating task to prevent race conditions with early requests
     logger.info("Generating initial image for cache...")
     with IMAGE_CACHE_LOCK:
         GENERATION_IN_PROGRESS = True
     initial_image_task = asyncio.create_task(_background_generate(source="startup"))
-    
+
     try:
         yield
     finally:
@@ -492,13 +552,14 @@ async def _lifespan(app):
         except asyncio.CancelledError:
             pass
 
+
 # Use the lifespan context to avoid deprecated on_event handlers
 app.router.lifespan_context = _lifespan
 
 
 def build_prompt() -> tuple[str, str]:
     """Return a randomized seasonal prompt using the blender.
-    
+
     Returns:
         tuple: (prompt, season_name)
     """
@@ -510,10 +571,12 @@ def build_prompt() -> tuple[str, str]:
 async def _generate_swarmui(prompt: str) -> dict:
     """Generate image using SwarmUI backend."""
     logger.debug("Sending prompt to SwarmUI (%s) model=%s", SWARMUI, IMAGE_MODEL)
-    
+
     async def _get_session_id(session: aiohttp.ClientSession) -> str | None:
         try:
-            async with session.post(f"{SWARMUI.rstrip('/')}/API/GetNewSession", json={}, timeout=10) as resp:
+            async with session.post(
+                f"{SWARMUI.rstrip('/')}/API/GetNewSession", json={}, timeout=10
+            ) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     return data.get("session_id")
@@ -521,7 +584,9 @@ async def _generate_swarmui(prompt: str) -> dict:
             logger.error("Error getting session id from SwarmUI: %s", e)
         return None
 
-    async def _call_generate(session: aiohttp.ClientSession, session_id: str, prompt_text: str) -> str | None:
+    async def _call_generate(
+        session: aiohttp.ClientSession, session_id: str, prompt_text: str
+    ) -> str | None:
         params = {
             "model": IMAGE_MODEL,
             "width": IMAGE_WIDTH,
@@ -530,7 +595,11 @@ async def _generate_swarmui(prompt: str) -> dict:
             "steps": IMAGE_STEPS,
             "seed": IMAGE_SEED,
         }
-        raw_input = {"prompt": str(prompt_text), **{k: v for k, v in params.items()}, "donotsave": True}
+        raw_input = {
+            "prompt": str(prompt_text),
+            **{k: v for k, v in params.items()},
+            "donotsave": True,
+        }
         data = {
             "session_id": session_id,
             "images": "1",
@@ -540,14 +609,20 @@ async def _generate_swarmui(prompt: str) -> dict:
             "rawInput": raw_input,
         }
         try:
-            async with session.post(f"{SWARMUI.rstrip('/')}/API/GenerateText2Image", json=data, timeout=IMAGE_TIMEOUT) as resp:
+            async with session.post(
+                f"{SWARMUI.rstrip('/')}/API/GenerateText2Image",
+                json=data,
+                timeout=IMAGE_TIMEOUT,
+            ) as resp:
                 if resp.status == 200:
                     j = await resp.json()
                     imgs = j.get("images") or []
                     if imgs:
                         return imgs[0]
                 else:
-                    logger.error("SwarmUI GenerateText2Image returned status %s", resp.status)
+                    logger.error(
+                        "SwarmUI GenerateText2Image returned status %s", resp.status
+                    )
         except Exception as e:
             logger.error("Error calling SwarmUI GenerateText2Image: %s", e)
         return None
@@ -567,7 +642,7 @@ async def _generate_swarmui(prompt: str) -> dict:
     if not image_encoded:
         logger.error("Image generation failed for prompt: %s", prompt)
         return {"error": "Generation failed"}
-    
+
     # Normalize to raw base64 payload
     if "," in image_encoded:
         image_b64 = image_encoded.split(",", 1)[1]
@@ -602,12 +677,23 @@ async def _generate_swarmui(prompt: str) -> dict:
 async def _generate_openai(prompt: str) -> dict:
     """Generate image using OpenAI API."""
 
-    async def _call_openai(session: aiohttp.ClientSession, prompt_text: str) -> str | None:
+    async def _call_openai(
+        session: aiohttp.ClientSession, prompt_text: str
+    ) -> str | None:
         url = f"{OPENAI_IMAGE_API_BASE.rstrip('/')}/images/generations"
-        headers = {"Authorization": f"Bearer {OPENAI_IMAGE_API_KEY}", "Content-Type": "application/json"}
-        body = {"model": OPENAI_IMAGE_MODEL, "prompt": prompt_text, "size": OPENAI_IMAGE_SIZE}
+        headers = {
+            "Authorization": f"Bearer {OPENAI_IMAGE_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        body = {
+            "model": OPENAI_IMAGE_MODEL,
+            "prompt": prompt_text,
+            "size": OPENAI_IMAGE_SIZE,
+        }
         try:
-            async with session.post(url, json=body, headers=headers, timeout=IMAGE_TIMEOUT) as resp:
+            async with session.post(
+                url, json=body, headers=headers, timeout=IMAGE_TIMEOUT
+            ) as resp:
                 if resp.status == 200:
                     j = await resp.json()
                     # Support both b64_json and url returns
@@ -641,7 +727,7 @@ async def _generate_openai(prompt: str) -> dict:
     if not image_encoded:
         logger.error("OpenAI image generation failed for prompt: %s", prompt)
         return {"error": "Generation failed"}
-    
+
     # Normalize to raw base64 payload
     if "," in image_encoded:
         image_b64 = image_encoded.split(",", 1)[1]
@@ -673,11 +759,18 @@ async def _generate_openai(prompt: str) -> dict:
     return {"prompt": prompt, "image_data": data_uri}
 
 
-async def generate_scene(prompt: str | None = None, season_name: str | None = None) -> dict:
+async def generate_scene(
+    prompt: str | None = None, season_name: str | None = None
+) -> dict:
     """Generate a seasonal scene image. If `prompt` is None, builds a random one."""
     if prompt is None:
         prompt, season_name = build_prompt()
-    logger.info("Generating %s scene (%s): %s", season_name or "seasonal", IMAGE_PROVIDER, prompt)
+    logger.info(
+        "Generating %s scene (%s): %s",
+        season_name or "seasonal",
+        IMAGE_PROVIDER,
+        prompt,
+    )
 
     if IMAGE_PROVIDER == "swarmui":
         return await _generate_swarmui(prompt)
@@ -710,21 +803,23 @@ async def index(request: Request, refresh: int | None = None):
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <title>VibeScape - AI Powered Seasonal Dreams</title>
         <style>
-            html,body {{ height:100%; margin:0; background:#111; color:#fff; display:flex; align-items:center; justify-content:center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow:hidden; }}
-            #imgContainer {{ position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }}
-            #img {{ width:100%; height:100%; object-fit:cover; display:block; }}
+            * {{ margin:0; padding:0; box-sizing:border-box; }}
+            html,body {{ width:100%; height:100%; background:#111; color:#fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow:hidden; }}
+            #imgContainer {{ position:fixed; top:0; left:0; width:100vw; height:100vh; display:block; }}
+            #img {{ position:absolute; top:50%; left:50%; width:100%; height:100%; transform:translate(-50%, -50%); object-fit:cover; object-position:center; display:block; }}
             #downloadBtn {{ position:absolute; top:16px; right:16px; padding:10px 16px; background:rgba(255,215,0,0.95); color:#111; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; opacity:0; transition:opacity 0.2s; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:10; }}
             #downloadBtn:hover {{ background:#ffed4e; }}
             #imgContainer:hover #downloadBtn {{ opacity:1; }}
             /* Bottom-center translucent prompt overlay */
-            #meta {{ position:fixed; left:50%; bottom:8px; transform:translateX(-50%); background:rgba(0,0,0,0.25); padding:4px 6px; border-radius:6px; font-family:Helvetica,Arial; font-size:12px; opacity:0.5; color:#fff; text-align:center; max-width:90%; pointer-events:auto; cursor:pointer; user-select:text; transition:opacity 0.2s; }}
+            #meta {{ position:fixed; left:50%; bottom:8px; transform:translateX(-50%); background:rgba(0,0,0,0.25); padding:4px 6px; border-radius:6px; font-family:Helvetica,Arial; font-size:12px; opacity:0.5; color:#fff; text-align:center; max-width:90%; pointer-events:auto; cursor:pointer; user-select:text; transition:opacity 0.2s; z-index:20; }}
             #meta:hover {{ opacity:0.9; }}
             #prompt {{ font-size:0.9em; user-select:text; }}
             #copyBtn {{ display:none; margin-left:8px; padding:2px 8px; background:#ffd700; color:#111; border:none; border-radius:4px; font-size:0.85em; cursor:pointer; font-weight:600; }}
             #copyBtn:hover {{ background:#ffed4e; }}
             #meta:hover #copyBtn {{ display:inline-block; }}
             /* Modern splash screen styling (red & gold theme) */
-            #splash {{ display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px; background:linear-gradient(135deg, rgba(178,17,17,0.18), rgba(255,215,0,0.12)); border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-width:600px; }}
+            body {{ display:flex; align-items:center; justify-content:center; }}
+            #splash {{ display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px; background:linear-gradient(135deg, rgba(178,17,17,0.18), rgba(255,215,0,0.12)); border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-width:600px; z-index:100; }}
             #splash-text {{ font-size:3.5em; font-weight:700; margin-bottom:20px; background:linear-gradient(45deg, #b30000, #ffd700); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; letter-spacing:2px; text-shadow:2px 2px 6px rgba(0,0,0,0.4); }}
             #splash-link {{ margin-top:15px; font-size:1em; opacity:0.95; }}
             #splash-link a {{ color:#ffd700; text-decoration:none; transition:all 0.25s ease; }}
@@ -896,14 +991,14 @@ async def image_endpoint(request: Request):
     # Declare globals at the top
     global CONNECTED_VIEWERS, MAX_CONNECTED_VIEWERS, LAST_ACTIVITY, LAST_IMAGE, LAST_IMAGE_TIME, GENERATION_IN_PROGRESS
     global IMAGES_GENERATED, GEN_TIME_COUNT, GEN_TIME_SUM, GEN_TIME_MIN, GEN_TIME_MAX
-    
+
     # Register/refresh session for this image request
     session_id = request.headers.get("X-Session-ID")
     if not session_id:
         client_host = request.client.host if request.client else "unknown"
         user_agent = request.headers.get("User-Agent", "unknown")
         session_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{client_host}:{user_agent}"))
-    
+
     now = time.time()
     with SESSION_STATE_LOCK:
         # Move to end (most recent) if exists, or add new
@@ -915,7 +1010,9 @@ async def image_endpoint(request: Request):
             # Remove oldest (first) session
             oldest_id = next(iter(SESSIONS))
             del SESSIONS[oldest_id]
-            logger.warning("Session limit reached, evicted oldest session: %s", oldest_id[:8])
+            logger.warning(
+                "Session limit reached, evicted oldest session: %s", oldest_id[:8]
+            )
         session_count = len(SESSIONS)
         CONNECTED_VIEWERS = session_count
         if CONNECTED_VIEWERS > MAX_CONNECTED_VIEWERS:
@@ -927,10 +1024,12 @@ async def image_endpoint(request: Request):
         last_time = LAST_IMAGE_TIME
         cached_result = LAST_IMAGE
         generation_in_progress = GENERATION_IN_PROGRESS
-    
+
     # Check if we need to trigger background generation
-    _maybe_trigger_generation(cached_result, last_time, generation_in_progress, source="/image")
-    
+    _maybe_trigger_generation(
+        cached_result, last_time, generation_in_progress, source="/image"
+    )
+
     # Always return immediately with cached image (or placeholder if none)
     if cached_result:
         # Add timestamp to response for client-side caching
@@ -940,7 +1039,13 @@ async def image_endpoint(request: Request):
         return JSONResponse(content=response_data, headers=headers)
     else:
         # No cached image yet, return placeholder
-        return JSONResponse(content={"image_data": None, "prompt": "Generating first image...", "timestamp": None})
+        return JSONResponse(
+            content={
+                "image_data": None,
+                "prompt": "Generating first image...",
+                "timestamp": None,
+            }
+        )
 
 
 @app.get("/image/status")
@@ -951,24 +1056,22 @@ async def image_status():
         last_time = LAST_IMAGE_TIME
         cached_result = LAST_IMAGE
         generation_in_progress = GENERATION_IN_PROGRESS
-    
+
     # Check if we need to trigger background generation
-    _maybe_trigger_generation(cached_result, last_time, generation_in_progress, source="/image/status")
-    
+    _maybe_trigger_generation(
+        cached_result, last_time, generation_in_progress, source="/image/status"
+    )
+
     # Return status response
     now = time.time()
     if cached_result and last_time:
         return {
             "available": True,
             "timestamp": last_time,
-            "age_seconds": now - last_time
+            "age_seconds": now - last_time,
         }
     else:
-        return {
-            "available": False,
-            "timestamp": None,
-            "age_seconds": None
-        }
+        return {"available": False, "timestamp": None, "age_seconds": None}
 
 
 @app.get("/season")
@@ -984,7 +1087,9 @@ async def season_info():
         }
     except Exception:
         logger.exception("Failed to get season info")
-        return JSONResponse(status_code=500, content={"error": "unable to get season info"})
+        return JSONResponse(
+            status_code=500, content={"error": "unable to get season info"}
+        )
 
 
 @app.get("/health")
@@ -1003,7 +1108,9 @@ async def version():
         if IMAGE_PROVIDER == "swarmui":
             data.update({"swarmui": SWARMUI, "model": IMAGE_MODEL})
         elif IMAGE_PROVIDER == "openai":
-            data.update({"openai_base": OPENAI_IMAGE_API_BASE, "model": OPENAI_IMAGE_MODEL})
+            data.update(
+                {"openai_base": OPENAI_IMAGE_API_BASE, "model": OPENAI_IMAGE_MODEL}
+            )
     except Exception:
         pass
     return data
@@ -1066,7 +1173,9 @@ async def favicon():
     try:
         if FAVICON_ICO_BYTES:
             headers = {"Cache-Control": f"public, max-age={ICON_CACHE_DURATION}"}
-            return Response(content=FAVICON_ICO_BYTES, media_type="image/x-icon", headers=headers)
+            return Response(
+                content=FAVICON_ICO_BYTES, media_type="image/x-icon", headers=headers
+            )
         logger.error("Favicon ICO cache is empty")
         return JSONResponse(status_code=404, content={"error": "favicon not available"})
     except Exception:
@@ -1080,12 +1189,18 @@ async def apple_touch_icon():
     try:
         if APPLE_TOUCH_BYTES:
             headers = {"Cache-Control": f"public, max-age={ICON_CACHE_DURATION}"}
-            return Response(content=APPLE_TOUCH_BYTES, media_type="image/png", headers=headers)
+            return Response(
+                content=APPLE_TOUCH_BYTES, media_type="image/png", headers=headers
+            )
         logger.error("Apple touch icon cache is empty")
-        return JSONResponse(status_code=404, content={"error": "apple icon not available"})
+        return JSONResponse(
+            status_code=404, content={"error": "apple icon not available"}
+        )
     except Exception:
         logger.exception("Failed to serve apple-touch-icon")
-        return JSONResponse(status_code=500, content={"error": "apple icon serve failed"})
+        return JSONResponse(
+            status_code=500, content={"error": "apple icon serve failed"}
+        )
 
 
 @app.get("/favicon-32x32.png")
@@ -1094,7 +1209,9 @@ async def favicon_32():
     try:
         if FAVICON_32_BYTES:
             headers = {"Cache-Control": f"public, max-age={ICON_CACHE_DURATION}"}
-            return Response(content=FAVICON_32_BYTES, media_type="image/png", headers=headers)
+            return Response(
+                content=FAVICON_32_BYTES, media_type="image/png", headers=headers
+            )
         logger.error("32x32 favicon cache is empty")
         return JSONResponse(status_code=404, content={"error": "favicon not available"})
     except Exception:
@@ -1112,8 +1229,10 @@ async def connect(request: Request):
             # Fallback: generate session ID from client info
             client_host = request.client.host if request.client else "unknown"
             user_agent = request.headers.get("User-Agent", "unknown")
-            session_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{client_host}:{user_agent}"))
-        
+            session_id = str(
+                uuid.uuid5(uuid.NAMESPACE_DNS, f"{client_host}:{user_agent}")
+            )
+
         now = time.time()
         with SESSION_STATE_LOCK:
             # Move to end (most recent) if exists, or add new
@@ -1124,7 +1243,9 @@ async def connect(request: Request):
             while len(SESSIONS) > MAX_SESSIONS:
                 oldest_id = next(iter(SESSIONS))
                 del SESSIONS[oldest_id]
-                logger.warning("Session limit reached, evicted oldest session: %s", oldest_id[:8])
+                logger.warning(
+                    "Session limit reached, evicted oldest session: %s", oldest_id[:8]
+                )
             session_count = len(SESSIONS)
             global CONNECTED_VIEWERS, MAX_CONNECTED_VIEWERS
             CONNECTED_VIEWERS = session_count
@@ -1132,8 +1253,13 @@ async def connect(request: Request):
                 MAX_CONNECTED_VIEWERS = CONNECTED_VIEWERS
             global LAST_ACTIVITY
             LAST_ACTIVITY = now
-        
-        logger.info("Session connected: %s — total=%d (peak=%d)", session_id[:8], CONNECTED_VIEWERS, MAX_CONNECTED_VIEWERS)
+
+        logger.info(
+            "Session connected: %s — total=%d (peak=%d)",
+            session_id[:8],
+            CONNECTED_VIEWERS,
+            MAX_CONNECTED_VIEWERS,
+        )
         return {"connected": CONNECTED_VIEWERS, "session_id": session_id}
     except Exception:
         logger.exception("Failed to register connect")
@@ -1148,8 +1274,10 @@ async def disconnect(request: Request):
         if not session_id:
             client_host = request.client.host if request.client else "unknown"
             user_agent = request.headers.get("User-Agent", "unknown")
-            session_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{client_host}:{user_agent}"))
-        
+            session_id = str(
+                uuid.uuid5(uuid.NAMESPACE_DNS, f"{client_host}:{user_agent}")
+            )
+
         with SESSION_STATE_LOCK:
             if session_id in SESSIONS:
                 del SESSIONS[session_id]
@@ -1157,8 +1285,10 @@ async def disconnect(request: Request):
             global CONNECTED_VIEWERS, LAST_ACTIVITY
             CONNECTED_VIEWERS = session_count
             LAST_ACTIVITY = time.time()
-        
-        logger.info("Session disconnected: %s — total=%d", session_id[:8], CONNECTED_VIEWERS)
+
+        logger.info(
+            "Session disconnected: %s — total=%d", session_id[:8], CONNECTED_VIEWERS
+        )
         return {"connected": CONNECTED_VIEWERS}
     except Exception:
         logger.exception("Failed to register disconnect")
@@ -1174,10 +1304,12 @@ async def viewers():
         return {"connected": current}
     except Exception:
         logger.exception("Failed to read viewers")
-        return JSONResponse(status_code=500, content={"error": "unable to read viewers"})
+        return JSONResponse(
+            status_code=500, content={"error": "unable to read viewers"}
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Optional quick connectivity check to SwarmUI
     print(f"Starting VibeScape server on port {PORT}")
     print(f"Image provider: {IMAGE_PROVIDER}")
@@ -1189,7 +1321,9 @@ if __name__ == '__main__':
     # shutdown can be handled gracefully (useful for Ctrl-C and Docker SIGTERM).
     import signal
 
-    config = uvicorn.Config(app, host='0.0.0.0', port=PORT, log_level="info", loop="asyncio", lifespan="on")
+    config = uvicorn.Config(
+        app, host="0.0.0.0", port=PORT, log_level="info", loop="asyncio", lifespan="on"
+    )
     server = uvicorn.Server(config)
 
     loop = asyncio.new_event_loop()

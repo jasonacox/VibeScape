@@ -10,15 +10,15 @@ from .base import SeasonBase
 class Easter(SeasonBase):
     """
     Easter season prompt generator.
-    
+
     Creates joyful Easter scenes featuring egg hunts, bunnies,
     spring celebrations, and Christian resurrection themes.
     """
-    
+
     @property
     def name(self) -> str:
         return "Easter"
-    
+
     @property
     def scene_keywords(self) -> list[str]:
         return [
@@ -53,7 +53,7 @@ class Easter(SeasonBase):
             "church decorated for Easter Sunday",
             "family portrait in Easter spring setting",
         ]
-    
+
     @property
     def extras(self) -> list[str]:
         return [
@@ -73,4 +73,29 @@ class Easter(SeasonBase):
             "spring awakening",
             "Easter sunshine",
             "soft bokeh lights",
+        ]
+
+    @property
+    def scene_objects(self) -> list[str]:
+        return [
+            "wicker Easter basket",
+            "painted Easter egg",
+            "chocolate bunny",
+            "stuffed bunny toy",
+            "egg decorating kit",
+            "spring flower arrangement",
+            "ceramic rabbit",
+            "pastel ribbon",
+            "nest with eggs",
+            "garden trowel",
+            "spring bonnet",
+            "wooden cross",
+            "lily flower pot",
+            "egg hunt sign",
+            "butterfly decoration",
+            "bird house",
+            "watering can",
+            "spring wreath",
+            "jelly beans bowl",
+            "chick decoration",
         ]

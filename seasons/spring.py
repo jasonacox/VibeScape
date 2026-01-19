@@ -10,15 +10,15 @@ from .base import SeasonBase
 class Spring(SeasonBase):
     """
     Spring season prompt generator.
-    
+
     Creates scenes celebrating spring renewal, blooming nature,
     fresh growth, and the transition from winter to warmth.
     """
-    
+
     @property
     def name(self) -> str:
         return "Spring"
-    
+
     @property
     def scene_keywords(self) -> list[str]:
         return [
@@ -38,7 +38,6 @@ class Spring(SeasonBase):
             "tight shot of hyacinth spike, tiny purple flowers clustered",
             "macro of forsythia branch with bright yellow blooms",
             "close-up of crocus emerging through last snow, purple and white",
-            
             # Garden and landscape scenes
             "cherry blossoms in full bloom over park pathway",
             "spring meadow filled with wildflowers stretching to horizon",
@@ -50,7 +49,6 @@ class Spring(SeasonBase):
             "spring forest floor with ferns unfurling, dappled sunlight",
             "flowering dogwood trees lining residential street",
             "farmers market stall with spring flowers and produce",
-            
             # Activity and life scenes
             "butterfly on spring flower, macro detail of wings",
             "baby animals in spring pasture with new grass",
@@ -62,7 +60,6 @@ class Spring(SeasonBase):
             "outdoor spring breakfast on patio with flowers",
             "greenhouse filled with seedlings in small pots",
             "fresh spring bouquet on table, close-up of mixed flowers",
-            
             # Rainy season scenes
             "rain shower with rainbow over green fields",
             "gentle spring rain falling on blooming flowers, water droplets on petals",
@@ -80,7 +77,7 @@ class Spring(SeasonBase):
             "rainy day cozy interior looking out at blooming garden",
             "fresh spring leaves catching raindrops, backlit by soft light",
         ]
-    
+
     @property
     def extras(self) -> list[str]:
         return [
@@ -114,4 +111,29 @@ class Spring(SeasonBase):
             "rainbow after rain",
             "cozy rainy day mood",
             "petrichor atmosphere",
+        ]
+
+    @property
+    def scene_objects(self) -> list[str]:
+        return [
+            "wicker basket",
+            "garden trowel",
+            "watering can",
+            "bird house",
+            "butterfly net",
+            "flower pot",
+            "kite",
+            "rain boots",
+            "colorful umbrella",
+            "garden bench",
+            "bird bath",
+            "seed packets",
+            "pruning shears",
+            "wheelbarrow",
+            "tea set on table",
+            "picnic blanket",
+            "flower vase",
+            "garden hat",
+            "swing set",
+            "wind chimes",
         ]

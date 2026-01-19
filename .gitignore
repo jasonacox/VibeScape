@@ -224,3 +224,4 @@ DerivedData/
 # Local Tools and Media
 tvos/media/
 local_test.sh
+sandbox/

@@ -39,7 +39,6 @@ class NewYears(SeasonBase):
             "ball drop style countdown moment, cheering crowd, sparkling confetti",
             "grand ballroom New Year's celebration, formal attire, chandeliers",
             "winter festival outdoors with fire pits, bundled up crowd, distant fireworks",
-
             # Intimate / cozy
             "cozy living room at midnight, warm string lights, quiet celebration",
             "intimate candlelit gathering, champagne toast, soft bokeh lights",
@@ -47,20 +46,17 @@ class NewYears(SeasonBase):
             "hands clinking champagne glasses, close-up, bubbles catching the light",
             "champagne bottle popping, celebratory spray, freeze-frame moment",
             "sparklers in hands, long exposure light trails, laughing faces",
-
             # Reflective / memory / renewal
             "handwritten New Year's resolutions in a journal, pen and paper, candle glow",
             "calendar page turning to January, soft morning light, hopeful atmosphere",
             "first sunrise of the year over mountains, calm, pastel sky",
             "snowy street at night, distant fireworks glow, quiet and dreamy",
             "fresh snow on New Year's morning, footprints, crisp air, early light",
-
             # Visual symbols / details
             "gold and silver decorations, balloons, streamers, elegant table setting",
             "countdown clock face near midnight, close-up, dramatic lighting",
             "party hats and noisemakers on a table, confetti scattered, warm lighting",
             "neon reflections on wet pavement after fireworks, cinematic night scene",
-
             # Non-city / varied settings
             "beach bonfire New Year's celebration, fireworks over the ocean",
             "small town main street celebration, twinkling lights, gentle snowfall",
@@ -92,6 +88,31 @@ class NewYears(SeasonBase):
             "marquee sign lights",
         ]
 
+    @property
+    def scene_objects(self) -> list[str]:
+        return [
+            "champagne bottle",
+            "confetti popper",
+            "party hat",
+            "noisemaker",
+            "countdown clock",
+            "champagne flute",
+            "disco ball",
+            "balloon arch",
+            "sparkler",
+            "number balloons",
+            "party banner",
+            "gift box",
+            "festive mask",
+            "string lights",
+            "calendar page",
+            "resolution journal",
+            "party horn",
+            "streamer roll",
+            "glitter bottle",
+            "celebration cake",
+        ]
+
     def _ny_window(self, now: datetime) -> bool:
         """
         Only inject explicit year text around New Year's.
@@ -102,7 +123,7 @@ class NewYears(SeasonBase):
         end = date(now.year + 1, 1, 5)
         return start <= d <= end
 
-    def get_prompt(self) -> str:
+    def get_prompt(self, month: int = None) -> str:
         """
         Generate a New Year's prompt with optional year inclusion.
 
@@ -133,18 +154,20 @@ class NewYears(SeasonBase):
             scene = random.choice(year_keywords)
         else:
             scene = random.choice(self.scene_keywords)
-            
+
             # If scene mentions numbers/countdown, replace with year-specific version
             if "numbers" in scene.lower() or "countdown" in scene.lower():
                 if "balloon numbers" in scene.lower():
-                    scene = f"New Year {year} balloon numbers floating, festive celebration"
+                    scene = (
+                        f"New Year {year} balloon numbers floating, festive celebration"
+                    )
                 elif "countdown" in scene.lower():
                     scene = scene.replace("countdown", f"{year} countdown")
 
         # Take 1–3 extras for variation
         k = random.choice([1, 2, 3])
         take = random.sample(self.extras, k=min(k, len(self.extras)))
-        
+
         # If "balloon numbers" extra is selected, ensure year is in scene
         if "balloon numbers" in take and str(year) not in scene:
             scene = f"New Year {year} celebration with {scene}"

@@ -10,15 +10,15 @@ from .base import SeasonBase
 class Fall(SeasonBase):
     """
     Fall/Autumn season prompt generator.
-    
+
     Creates scenes celebrating autumn colors, harvest time,
     cozy fall activities, and the transition to cooler weather.
     """
-    
+
     @property
     def name(self) -> str:
         return "Fall"
-    
+
     @property
     def scene_keywords(self) -> list[str]:
         return [
@@ -53,7 +53,7 @@ class Fall(SeasonBase):
             "golden hour light through fall trees",
             "peaceful autumn garden scene",
         ]
-    
+
     @property
     def extras(self) -> list[str]:
         return [
@@ -73,4 +73,29 @@ class Fall(SeasonBase):
             "seasonal comfort",
             "nostalgic mood",
             "soft bokeh lights",
+        ]
+
+    @property
+    def scene_objects(self) -> list[str]:
+        return [
+            "pumpkin",
+            "wicker basket",
+            "woolen scarf",
+            "rake",
+            "wheelbarrow",
+            "apple crate",
+            "hay bale",
+            "corn stalk",
+            "rustic ladder",
+            "copper kettle",
+            "flannel blanket",
+            "wooden rocking chair",
+            "harvest wreath",
+            "cider jug",
+            "vintage book",
+            "knitted throw",
+            "farm bucket",
+            "garden boot",
+            "autumn wreath",
+            "acorn pile",
         ]

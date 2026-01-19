@@ -10,15 +10,15 @@ from .base import SeasonBase
 class Halloween(SeasonBase):
     """
     Halloween season prompt generator.
-    
+
     Creates fun and festive Halloween scenes with costumes,
     decorations, trick-or-treating, and family-friendly spooky themes.
     """
-    
+
     @property
     def name(self) -> str:
         return "Halloween"
-    
+
     @property
     def scene_keywords(self) -> list[str]:
         return [
@@ -53,7 +53,7 @@ class Halloween(SeasonBase):
             "candy corn and Halloween treats",
             "family in coordinated costumes",
         ]
-    
+
     @property
     def extras(self) -> list[str]:
         return [
@@ -73,4 +73,29 @@ class Halloween(SeasonBase):
             "family friendly spooks",
             "Halloween spirit",
             "soft bokeh lights",
+        ]
+
+    @property
+    def scene_objects(self) -> list[str]:
+        return [
+            "carved jack-o-lantern",
+            "witch's broomstick",
+            "black cat",
+            "candy bucket",
+            "ghost decoration",
+            "skeleton",
+            "spider web",
+            "cauldron",
+            "witch hat",
+            "pumpkin",
+            "lantern",
+            "scarecrow",
+            "haunted house model",
+            "potion bottle",
+            "candy corn bowl",
+            "cobweb decoration",
+            "tombstone prop",
+            "bat decoration",
+            "orange string lights",
+            "costume mask",
         ]
