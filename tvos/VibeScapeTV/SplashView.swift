@@ -17,7 +17,7 @@ import Foundation
 /// - Menu/Back dismisses the splash.
 struct SplashView: View {
     @Binding var isPresented: Bool
-    @Binding var showPrompt: Bool
+    @Binding var promptMode: PromptDisplayMode
     @Binding var imageURL: String
     @FocusState private var focusedButton: FocusableButton?
 
@@ -32,11 +32,18 @@ struct SplashView: View {
     
     /// Focus targets for the tvOS focus engine.
     enum FocusableButton {
-        case toggle
+        case promptMode
         case urlField
         case saveURL
         case resetURL
         case close
+    }
+    
+    /// Get app version from bundle
+    private var appVersion: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        return "Version \(version) (Build \(build))"
     }
     
     var body: some View {
@@ -76,7 +83,7 @@ struct SplashView: View {
                     .padding(.top, 4)
                 
                 // Version
-                Text("Version 1.0")
+                Text(appVersion)
                     .font(.system(size: 16))
                     .foregroundColor(.white.opacity(0.5))
                     .padding(.top, 8)
@@ -90,24 +97,38 @@ struct SplashView: View {
                 
                 // Settings section
                 VStack(spacing: 20) {
-                    // Toggle for showing/hiding prompt
+                    // Prompt display mode selector
                     VStack(spacing: 12) {
-                        Text("Show Prompt Text")
+                        Text("Prompt Display Mode")
                             .font(.system(size: 22))
                             .foregroundColor(.white.opacity(0.9))
                         
-                        Button(action: {
-                            showPrompt.toggle()
-                        }) {
-                            Text(showPrompt ? "ON" : "OFF")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 140, height: 54)
-                                .background(showPrompt ? Color(red: 0.2, green: 0.6, blue: 0.4) : Color.white.opacity(0.2))
-                                .cornerRadius(10)
+                        VStack(spacing: 10) {
+                            ForEach(PromptDisplayMode.allCases, id: \.self) { mode in
+                                Button(action: {
+                                    promptMode = mode
+                                    ImageService.savePromptMode(mode)
+                                }) {
+                                    HStack {
+                                        Text(mode.displayName)
+                                            .font(.system(size: 19, weight: .medium))
+                                            .foregroundColor(.white)
+                                        Spacer()
+                                        if promptMode == mode {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 22))
+                                                .foregroundColor(.white)
+                                        }
+                                    }
+                                    .frame(width: 320, height: 50)
+                                    .padding(.horizontal, 20)
+                                    .background(promptMode == mode ? Color(red: 0.2, green: 0.6, blue: 0.4) : Color.white.opacity(0.2))
+                                    .cornerRadius(10)
+                                }
+                                .buttonStyle(.card)
+                                .focused($focusedButton, equals: mode == .autoFade ? .promptMode : nil)
+                            }
                         }
-                        .buttonStyle(.card)
-                        .focused($focusedButton, equals: .toggle)
                     }
 
                     // Image URL
@@ -195,7 +216,7 @@ struct SplashView: View {
         }
         .onAppear {
             draftImageURL = imageURL
-            focusedButton = .toggle
+            focusedButton = .promptMode
         }
         .onExitCommand {
             isPresented = false
@@ -323,5 +344,5 @@ struct SplashView: View {
 }
 
 #Preview {
-    SplashView(isPresented: .constant(true), showPrompt: .constant(true), imageURL: .constant(ImageService.defaultImageURL))
+    SplashView(isPresented: .constant(true), promptMode: .constant(.autoFade), imageURL: .constant(ImageService.defaultImageURL))
 }

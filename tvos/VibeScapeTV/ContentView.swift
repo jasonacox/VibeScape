@@ -16,7 +16,9 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var imageService = ImageService()
     @State private var showSplash = false
-    @State private var showPrompt = true
+    @State private var promptMode: PromptDisplayMode = ImageService.loadPromptMode()
+    @State private var isPromptCurrentlyVisible = true
+    @State private var promptFadeTimer: Timer?
     @State private var imageURL = ImageService.loadImageURL()
     @State private var showConnectionError = false
     
@@ -26,6 +28,42 @@ struct ContentView: View {
         return error.contains("Could not connect") || 
                error.contains("Network error") ||
                error.contains("Invalid URL")
+    }
+    
+    /// Determines if prompt should be shown based on current mode
+    private var shouldShowPrompt: Bool {
+        switch promptMode {
+        case .alwaysHidden:
+            return false
+        case .alwaysVisible:
+            return true
+        case .autoFade:
+            return isPromptCurrentlyVisible
+        }
+    }
+    
+    /// Start 5-second fade timer for auto-fade mode
+    private func startPromptFadeTimer() {
+        promptFadeTimer?.invalidate()
+        
+        guard promptMode == .autoFade else { return }
+        
+        isPromptCurrentlyVisible = true
+        promptFadeTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { _ in
+            withAnimation(.easeOut(duration: 1.0)) {
+                isPromptCurrentlyVisible = false
+            }
+        }
+    }
+    
+    /// Show prompt again when user interacts with remote
+    private func onUserInteraction() {
+        if promptMode == .autoFade && !isPromptCurrentlyVisible {
+            withAnimation(.easeIn(duration: 0.3)) {
+                isPromptCurrentlyVisible = true
+            }
+            startPromptFadeTimer()
+        }
     }
     
     var body: some View {
@@ -55,8 +93,8 @@ struct ContentView: View {
                 }
             }
             
-            // Always show prompt at bottom if available
-            if showPrompt, let prompt = imageService.currentPrompt {
+            // Show prompt at bottom based on display mode
+            if let prompt = imageService.currentPrompt {
                 GeometryReader { geometry in
                     VStack {
                         Spacer()
@@ -77,6 +115,8 @@ struct ContentView: View {
                     }
                 }
                 .ignoresSafeArea()
+                .opacity(shouldShowPrompt ? 1.0 : 0.0)
+                .animation(.easeInOut(duration: 1.0), value: isPromptCurrentlyVisible)
             }
             
             // Error message if loading fails (only show if no cached image and not a connection error)
@@ -106,17 +146,26 @@ struct ContentView: View {
                 _ = imageService.setImageURL(imageURL)
             }
             imageService.startFetching()
+            startPromptFadeTimer()
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
+            promptFadeTimer?.invalidate()
             imageService.stopFetching()
         }
         .animation(.easeInOut(duration: 0.3), value: showSplash)
         .onPlayPauseCommand {
+            onUserInteraction()
             showSplash.toggle()
+        }
+        .onMoveCommand { _ in
+            onUserInteraction()
         }
         .onChange(of: imageURL) { [imageService] newValue in
             _ = imageService.setImageURL(newValue)
+        }
+        .onChange(of: imageService.currentImage) { _ in
+            startPromptFadeTimer()
         }
         .onChange(of: imageService.errorMessage) { error in
             // Show connection error alert when no image is cached
@@ -132,7 +181,7 @@ struct ContentView: View {
             Text("Could not connect to the VibeScape server.\n\nPlease check that the server is running and the URL is correct.")
         }
         .fullScreenCover(isPresented: $showSplash) {
-            SplashView(isPresented: $showSplash, showPrompt: $showPrompt, imageURL: $imageURL)
+            SplashView(isPresented: $showSplash, promptMode: $promptMode, imageURL: $imageURL)
         }
     }
 }

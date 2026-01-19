@@ -11,6 +11,21 @@ import Foundation
 import SwiftUI
 import Combine
 
+/// Display mode for AI prompt text overlay
+enum PromptDisplayMode: String, Codable, CaseIterable {
+    case autoFade = "auto"           // Show 5s then fade (default)
+    case alwaysHidden = "hidden"      // Never show
+    case alwaysVisible = "visible"    // Always show
+    
+    var displayName: String {
+        switch self {
+        case .autoFade: return "Auto-Hide (5s)"
+        case .alwaysHidden: return "Hidden"
+        case .alwaysVisible: return "Always Visible"
+        }
+    }
+}
+
 /// JSON payload returned by the VibeScape `/image/status` endpoint.
 struct StatusResponse: Codable {
     let available: Bool
@@ -48,6 +63,7 @@ class ImageService: ObservableObject {
 
     static let defaultImageURL = "https://vibescape.jasonacox.com/image"
     static let imageURLUserDefaultsKey = "vibescape.imageURL"
+    static let promptModeKey = "vibescape.promptDisplayMode"
 
     private(set) var imageURL: String
     private let refreshInterval: TimeInterval = 10.0
@@ -74,10 +90,29 @@ class ImageService: ObservableObject {
     init() {
         self.imageURL = Self.loadImageURL()
     }
+    
+    deinit {
+        stopFetching()
+        urlSession.invalidateAndCancel()
+    }
 
     /// Loads the configured image URL (or the default if not set).
     static func loadImageURL() -> String {
         UserDefaults.standard.string(forKey: imageURLUserDefaultsKey) ?? defaultImageURL
+    }
+    
+    /// Loads the configured prompt display mode (or auto-fade if not set).
+    static func loadPromptMode() -> PromptDisplayMode {
+        guard let raw = UserDefaults.standard.string(forKey: promptModeKey),
+              let mode = PromptDisplayMode(rawValue: raw) else {
+            return .autoFade // default
+        }
+        return mode
+    }
+    
+    /// Saves the prompt display mode.
+    static func savePromptMode(_ mode: PromptDisplayMode) {
+        UserDefaults.standard.set(mode.rawValue, forKey: promptModeKey)
     }
 
     /// Updates the image URL if valid and persists it.
@@ -128,6 +163,8 @@ class ImageService: ObservableObject {
     /// Checks the lightweight status endpoint to see if a new image is available.
     /// Only fetches the full image if the timestamp has changed.
     private func checkStatus() {
+        guard !isFetching else { return }
+        
         guard let url = URL(string: statusURL) else {
             // Fallback to full fetch if status URL is invalid
             fetchImage()
