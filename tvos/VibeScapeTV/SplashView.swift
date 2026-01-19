@@ -97,38 +97,35 @@ struct SplashView: View {
                 
                 // Settings section
                 VStack(spacing: 20) {
-                    // Prompt display mode selector
+                    // Prompt display mode selector (cycling button)
                     VStack(spacing: 12) {
                         Text("Prompt Display Mode")
                             .font(.system(size: 22))
                             .foregroundColor(.white.opacity(0.9))
                         
-                        VStack(spacing: 10) {
-                            ForEach(PromptDisplayMode.allCases, id: \.self) { mode in
-                                Button(action: {
-                                    promptMode = mode
-                                    ImageService.savePromptMode(mode)
-                                }) {
-                                    HStack {
-                                        Text(mode.displayName)
-                                            .font(.system(size: 19, weight: .medium))
-                                            .foregroundColor(.white)
-                                        Spacer()
-                                        if promptMode == mode {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .font(.system(size: 22))
-                                                .foregroundColor(.white)
-                                        }
-                                    }
-                                    .frame(width: 320, height: 50)
-                                    .padding(.horizontal, 20)
-                                    .background(promptMode == mode ? Color(red: 0.2, green: 0.6, blue: 0.4) : Color.white.opacity(0.2))
-                                    .cornerRadius(10)
-                                }
-                                .buttonStyle(.card)
-                                .focused($focusedButton, equals: mode == .autoFade ? .promptMode : nil)
+                        Button(action: {
+                            // Cycle to next mode
+                            let allModes = PromptDisplayMode.allCases
+                            if let currentIndex = allModes.firstIndex(of: promptMode) {
+                                let nextIndex = (currentIndex + 1) % allModes.count
+                                promptMode = allModes[nextIndex]
+                                ImageService.savePromptMode(promptMode)
                             }
+                        }) {
+                            HStack(spacing: 12) {
+                                Text(promptMode.displayName)
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.white)
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.white.opacity(0.8))
+                            }
+                            .frame(width: 340, height: 54)
+                            .background(Color(red: 0.2, green: 0.6, blue: 0.4))
+                            .cornerRadius(10)
                         }
+                        .buttonStyle(.card)
+                        .focused($focusedButton, equals: .promptMode)
                     }
 
                     // Image URL
